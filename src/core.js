@@ -39,7 +39,7 @@ const lb=ln=>`<span class="lb l${ln}">${ln}</span>`;
 
 /* ---------- 상태 ---------- */
 const S={plan:{date:'2026-12-05',aud:'',shows:[{v:'KSPO DOME',s:'18:00',t:'콘서트',on:true},{v:'티켓링크 라이브 아레나(핸드볼경기장)',s:'18:00',t:'콘서트',on:false},{v:'올림픽홀',s:'18:30',t:'팬미팅·팬콘',on:true}]},pref:'calm',day:null,venue:null,mode:'ops',tab:{aud:'route',ops:'sum'},depKey:'end',dep:null,dest:null,sel:null,hour:null,shift:60,alt:20,poiWhen:'after',poiSel:null,stnSel:null,sheet:'mid',playing:null};
-function setDay(id){const d=byId[id]||byId['d20250510']||D.days[0];S.day=d;const vs=venues(d);S.venue=vs.find(v=>D.walk[v])||vs[0];S.depKey='end';S.dep=calEnd(d);S.sel=null;S.hour=null;S.stnSel=null;S.poiSel=null}
+function setDay(id){const d=byId[id]||byId['d20250510']||D.days[0];S.day=d;const vs=venues(d);S.venue=vs.find(v=>D.walk[v])||vs[0];S.depKey='end';S.dep=calEnd(d);S.sel=null;S.hour=null;S.stnSel=null;S.poiSel=null;S.busSel=null}
 
 /* ---------- 지도 ---------- */
 const G=M.geo,[MW,MH]=G.size,NS='http://www.w3.org/2000/svg';
@@ -55,11 +55,11 @@ const LINESHAPE=[
   {ln:'8',c:'#E6186C',pts:[[-60,1300],ST.m,[1020,-60]],ends:[[150,1250,'잠실·모란'],[960,90,'천호·별내']]},
 ];
 function baseLayer(){
-  let s=`<defs><pattern id="blk" width="120" height="120" patternUnits="userSpaceOnUse"><rect width="120" height="120" fill="#EEF1EC"/><rect x="10" y="10" width="100" height="100" rx="14" fill="#E6EAE3"/></pattern>
+  let s=`<defs><pattern id="blk" width="120" height="120" patternUnits="userSpaceOnUse"><rect width="120" height="120" fill="#F3F4F6"/><rect x="10" y="10" width="100" height="100" rx="14" fill="#E9EBEF"/></pattern>
   <filter id="shd" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#101828" flood-opacity=".22"/></filter></defs>
   <rect x="-2000" y="-2000" width="${MW+4000}" height="${MH+4000}" fill="url(#blk)"/>`;
   // 큰길(양재대로 · 5호선 위)
-  s+=`<path d="M1700 2440 L${ST.b} L${ST.c} L2470 -60" fill="none" stroke="#DDE2D8" stroke-width="58" stroke-linejoin="round"/><path d="M1700 2440 L${ST.b} L${ST.c} L2470 -60" fill="none" stroke="#FFFFFF" stroke-width="46" stroke-linejoin="round"/>`;
+  s+=`<path d="M1700 2440 L${ST.b} L${ST.c} L2470 -60" fill="none" stroke="#D9DCE1" stroke-width="58" stroke-linejoin="round"/><path d="M1700 2440 L${ST.b} L${ST.c} L2470 -60" fill="none" stroke="#FFFFFF" stroke-width="46" stroke-linejoin="round"/>`;
   s+=`<text x="1690" y="2260" font-size="34" fill="#98A2B3" font-weight="600" transform="rotate(-62 1690 2260)">양재대로</text>`;
   // 공원
   s+=`<path d="${smooth(PARK)}" fill="#CFE6C3" stroke="#B8D9A8" stroke-width="10"/>`;
@@ -92,7 +92,7 @@ function fitTo(b,anim=true,pad=60){const R=visibleRect(),W=svg.clientWidth,H=svg
 const bboxOf=pts=>[Math.min(...pts.map(p=>p[0])),Math.min(...pts.map(p=>p[1])),Math.max(...pts.map(p=>p[0])),Math.max(...pts.map(p=>p[1]))];
 function fitDefault(anim=true){const b=bboxOf([...Object.values(ST),VN['KSPO DOME']]);fitTo([b[0]-190,b[1]-140,b[2]+330,b[3]+60],anim,60)}
 function bindPan(){const P=new Map();let last=null;
-  svg.addEventListener('pointerdown',e=>{downEl=e.target.closest('[data-stn],[data-poi],[data-v]');svg.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});last=null;svg.classList.add('drag');moved=0});
+  svg.addEventListener('pointerdown',e=>{downEl=e.target.closest('[data-stn],[data-poi],[data-v],[data-bus]');svg.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});last=null;svg.classList.add('drag');moved=0});
   svg.addEventListener('pointermove',e=>{if(!P.has(e.pointerId))return;const p=P.get(e.pointerId),nx=e.clientX,ny=e.clientY;
     if(P.size===1){const s=px();V.x-=(nx-p.x)*s;V.y-=(ny-p.y)*s;moved+=Math.abs(nx-p.x)+Math.abs(ny-p.y);P.set(e.pointerId,{x:nx,y:ny});apply()}
     else if(P.size===2){P.set(e.pointerId,{x:nx,y:ny});const [a,b]=[...P.values()],dist=Math.hypot(a.x-b.x,a.y-b.y),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};

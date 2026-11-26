@@ -86,11 +86,21 @@ function waitCard(){const cand=OPTS.filter(o=>o.pick&&o.cr);if(!cand.length)retu
   return `<div class="wait"><span class="wi">${IC.clock}</span><div><b>${msg}</b><p>${sub}</p>${ps.length&&later?`<div class="chips">${ps.map(p=>`<button class="chip" data-gopoi="${p.id}">${esc(p.n)}</button>`).join('')}</div>`:''}</div></div>`}
 function stationList(){const d=S.day;const rows=Object.keys(GRP).map(g=>{const w=walkOf(S.venue,g),arr=S.dep+w,c=crowdG(d,g,Math.floor(arr/60));return {g,w,arr,c}}).sort((a,b)=>((a.c?a.c.lv:1)-(b.c?b.c.lv:1))||a.w-b.w);
   return `<div class="sec"><h3>${IC.list}${hm(S.dep)}에 출발하면 · 2025년 이날 역별 승차</h3>${rows.map(r=>`<button class="srow" data-stn="${r.g}"><div class="grow"><div class="sn">${GRP[r.g].n}역 ${GRP[r.g].k.map(k=>lb(SK[k].ln)).join(' ')}</div><div class="sm">도보 ${r.w}분 · ${hm(r.arr)} 도착</div></div>${lvTag(r.c)}</button>`).join('')}</div>`}
+const busKind=r=>/^\d{4}$/.test(r)?(r==='6300'?'air':'branch'):/^\d+(-\d+)?$/.test(r)?'gg':'town';
+function busNear(){const vxy=VN[S.venue];if(!vxy||!M.bus)return [];const gs=[];
+  // 같은 이름이면서 150m 안에 있는 정류장(길 건너 양방향)은 한 줄로 합쳐요
+  M.bus.forEach(t=>{const g=gs.find(x=>x.n===t.n&&Math.hypot(x.xy[0]-t.xy[0],x.xy[1]-t.xy[1])<150);
+    if(g){g.ids.push(t.id);t.r.forEach(r=>{if(!g.r.includes(r))g.r.push(r)});if(t.to&&!g.to.includes(t.to))g.to.push(t.to);if(distMin(vxy,t.xy)<g.w){g.w=distMin(vxy,t.xy);g.id=t.id;g.xy=t.xy}}
+    else gs.push({id:t.id,ids:[t.id],n:t.n,xy:t.xy,r:[...t.r],to:t.to?[t.to]:[],w:distMin(vxy,t.xy)})});
+  return gs.sort((a,b)=>a.w-b.w).slice(0,4)}
+function busList(){const rows=busNear();if(!rows.length)return '';
+  return `<div class="sec"><h3>${IC.pin}버스 정류장 · 걸어서 가까운 순</h3>${rows.map(t=>`<button class="srow" data-bus="${t.id}" aria-pressed="${t.ids.includes(S.busSel)}"><span class="busic">B</span><div class="grow"><div class="sn">${esc(t.n)}</div><div class="sm">도보 약 ${t.w}분${t.to.length?` · ${t.to.map(esc).join(' / ')} 방면`:''}</div><div class="busr">${t.r.map(x=>`<span class="br ${busKind(x)}">${esc(x)}</span>`).join('')}</div></div></button>`).join('')}
+  <p class="small muted" style="margin-top:8px">버스는 승차 기록이 없어 혼잡도는 표시하지 않아요. 정류장: 서울시 버스정류소 위치정보 · 노선: 카카오맵 대조(2026-11).</p></div>`}
 function quickDests(){const ids=['jamsil','gangnam','cheonho','yeouido','gwanghwa','garak'];
   return `<div class="sec"><h3>${IC.pin}자주 가는 곳</h3><div class="chips">${ids.map(id=>{const t=M.DEST.find(x=>x.id===id);return `<button class="chip out" data-dest="${id}">${[...new Set(t.via.map(v=>v[0]))].map(lb).join('')} ${esc(t.n)}</button>`}).join('')}</div></div>`}
 function vRoute(){computeOptions();let h=`<p class="banner">${IC.clock}<span>2025년 같은 공연일 기록과 열차 시각표로 만든 미리보기예요. 실시간 정보가 아니에요.</span></p>`+tripBox();
   if(!S.day.sub)h+=`<p class="empty">이 공연일은 지하철 승차 기록이 없어요. 다른 공연일을 골라 보세요.</p>`;
-  if(!S.dest)return h+quickDests()+stationList()+srcNote();
+  if(!S.dest)return h+quickDests()+stationList()+busList()+srcNote();
   h+=`<div class="row" style="margin:4px 2px 10px;gap:6px"><span class="small muted">추천 기준</span><button class="chip" data-pref="calm" aria-pressed="${S.pref==='calm'}">덜 붐비게</button><button class="chip" data-pref="fast" aria-pressed="${S.pref==='fast'}">빨리</button></div>`;
   h+=waitCard();h+=OPTS.length?OPTS.map(optCard).join(''):`<p class="empty">이 목적지로 바로 가는 노선이 주변 역에 없어요.</p>`;
   return h+srcNote()}
@@ -227,6 +237,10 @@ function drawDyn(){const sc=px(),d=S.day;let s=lineTags(sc);const vxy=VN[S.venue
     Object.keys(GRP).forEach(g=>{const on=groups.includes(g);const arr=S.dep+walkOf(S.venue,g),c=crowdG(d,g,Math.floor(arr/60));s+=stnMarker(g,c,sc,{dim:!on,sel:g===selG})});
     if(tab==='near')M.poi.filter(p=>p.xy).forEach(p=>{const sel=p.id===S.poiSel,r=(sel?17:13)*sc,col={walk:'#16834A',see:'#6D4FD8',out:'#1C6FD1',food:'#D9620B'}[p.cat];
       s+=`<g class="poi" data-poi="${p.id}"><circle cx="${p.xy[0]}" cy="${p.xy[1]}" r="${r}" fill="${col}" stroke="#fff" stroke-width="${3*sc}" filter="url(#shd)"/><g transform="translate(${p.xy[0]-r*.62} ${p.xy[1]-r*.62}) scale(${r*1.24/24})" color="#fff">${IC[CAT[p.cat].ic].replace('<svg','<svg width="24" height="24"')}</g>${sel||sc<3.2?`<text x="${p.xy[0]}" y="${p.xy[1]+r+15*sc}" text-anchor="middle" font-size="${12*sc}" font-weight="700" fill="#101828" stroke="#fff" stroke-width="${4*sc}" paint-order="stroke">${esc(p.n)}</text>`:''}</g>`});
+    if(tab==='route'&&M.bus){const bs=M.bus.find(t=>t.id===S.busSel);
+      if(bs&&vxy){const c=curve(vxy,bs.xy,.12);s+=`<path d="${c.d}" fill="none" stroke="#fff" stroke-width="${9*sc}" stroke-linecap="round"/><path d="${c.d}" fill="none" stroke="var(--brand)" stroke-width="${5*sc}" stroke-linecap="round" stroke-dasharray="${.1*sc} ${9*sc}"/>`+pill(c.m[0],c.m[1],`약 ${distMin(vxy,bs.xy)}분`,sc,{icon:'walk',bg:'#1F5BD8',fg:'#fff'})}
+      M.bus.forEach(t=>{const sel=t.id===S.busSel,h=(sel?15:10)*sc,[x,y]=t.xy;
+        s+=`<g class="busm" data-bus="${t.id}"><rect x="${x-h/2}" y="${y-h/2}" width="${h}" height="${h}" rx="${2.5*sc}" fill="${sel?'#1F5BD8':'#475467'}" stroke="#fff" stroke-width="${2*sc}"/>${sel?`<text x="${x}" y="${y+h/2+15*sc}" text-anchor="middle" font-size="${12*sc}" font-weight="700" fill="#111827" stroke="#fff" stroke-width="${4*sc}" paint-order="stroke">${esc(t.n)}</text>`:''}</g>`})}
     s+=venueLabels(sc,[S.venue]);venuePins(sc,[S.venue]).forEach(x=>s+=x)}
   else if(S.tab.ops==='plan'){Object.keys(GRP).forEach(g=>{s+=stnMarker(g,null,sc,{dim:false,sel:false})});const vs=S.plan.shows.filter(x=>x.on).map(x=>x.v);s+=venueLabels(sc,vs);venuePins(sc,vs).forEach(x=>s+=x)}
   else{const hr=opsHour();Object.keys(GRP).forEach(g=>{const v=grpVal(d,g,hr),u=UMAX[g],r=v!=null?v/u:null,lv=r==null?null:r<.6?0:r<1?1:r<1.6?2:3,[x,y]=ST[g],R=(10+Math.sqrt(v||0)*.5)*sc;
@@ -327,10 +341,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#ov').hidden)cl
 $('#panel').addEventListener('click',e=>{const t=e.target;let b;
   if(b=t.closest('#destBtn'))return openDests();
   if(b=t.closest('[data-dest]')){S.dest=M.DEST.find(x=>x.id===b.dataset.dest);S.sel=null;render();$('#panel').scrollTop=0;return focusSel()}
-  if(b=t.closest('[data-venue]')){S.venue=b.dataset.venue;S.sel=null;render();return focusSel()}
+  if(b=t.closest('[data-venue]')){S.venue=b.dataset.venue;S.sel=null;S.busSel=null;render();return focusSel()}
   if(b=t.closest('[data-pref]')){S.pref=b.dataset.pref;S.sel=null;renderPanel();drawDyn();focusSel();return}
   if(b=t.closest('[data-dep]')){S.depKey=b.dataset.dep;S.dep=+b.dataset.m;S.sel=null;render();return}
   if(b=t.closest('[data-opt]')){S.sel=S.sel===b.dataset.opt?null:b.dataset.opt;renderPanel();drawDyn();if(S.sel)focusSel();return}
+  if(b=t.closest('[data-bus]')){S.busSel=S.busSel===b.dataset.bus?null:b.dataset.bus;renderPanel();drawDyn();const bs=M.bus.find(x=>x.id===S.busSel);if(bs){const vxy=VN[S.venue];fitTo(bboxOf([vxy||bs.xy,bs.xy]),true,200)}return}
   if(b=t.closest('[data-stn]')){S.stnSel=S.stnSel===b.dataset.stn?null:b.dataset.stn;drawDyn();if(S.stnSel){const vxy=VN[S.venue];fitTo(bboxOf([vxy||ST[S.stnSel],ST[S.stnSel]]),true,180)}return}
   if(b=t.closest('[data-when]')){S.poiWhen=b.dataset.when;S.poiSel=null;renderPanel();drawDyn();return}
   if(b=t.closest('[data-poi]')){S.poiSel=S.poiSel===b.dataset.poi?null:b.dataset.poi;renderPanel();drawDyn();focusSel();return}
@@ -357,6 +372,7 @@ function mapClick(el){if(!el)return;if(el.dataset.stn){if(S.mode==='ops'){S.tab.
     if(S.tab.aud!=='route'){S.tab.aud='route'}
     if(S.dest){const o=OPTS.find(x=>x.g===el.dataset.stn);if(o){S.sel=o.key;render();focusSel();setTimeout(()=>document.querySelector('.opt[aria-expanded=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50)}}
     else{S.stnSel=el.dataset.stn;render();focusSel()}return}
+  if(el.dataset.bus){S.tab.aud='route';S.busSel=el.dataset.bus;render();setTimeout(()=>document.querySelector('[data-bus][aria-pressed=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50);return}
   if(el.dataset.poi){S.poiSel=el.dataset.poi;renderPanel();drawDyn();setTimeout(()=>document.querySelector('.pc[aria-pressed=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50)}}
 // 시트 끌기(모바일)
 (function(){const sh=$('#sheet'),gb=$('#grab');let y0=null,h0=0;
