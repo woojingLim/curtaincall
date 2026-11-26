@@ -259,6 +259,16 @@ ul.chk li{position:relative;padding:8px 0 8px 22px;font-size:13px;line-height:1.
 ul.chk li:first-child{border-top:0}
 ul.chk li::before{content:"";position:absolute;left:2px;top:13px;width:10px;height:10px;border-radius:3px;border:2px solid var(--brand)}
 ul.chk b{color:var(--ink)}
+.extlink{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:7px 11px;border-radius:999px;background:#FEE500;color:#191919;font-size:12.5px;font-weight:700;text-decoration:none}
+.extlink svg{width:14px;height:14px}
+.wait .extlink{margin-top:8px}
+.flow{list-style:none;counter-reset:f;margin:2px 0 0;padding:0;display:grid;gap:8px}
+.flow li{counter-increment:f;position:relative;padding:10px 12px 10px 40px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:13px;line-height:1.5}
+.flow li::before{content:counter(f);position:absolute;left:12px;top:10px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:11.5px;font-weight:800;display:grid;place-items:center}
+.flow b{display:block;font-size:13.5px}
+.flow span{color:var(--sub)}
+.note.team{text-align:center;margin-top:18px}
+.rph small{font-weight:600;color:#667085;margin-left:6px}
 .linkbtn{color:var(--brand);font-weight:700;text-decoration:underline;font-size:12.5px;padding:0;display:inline}
 .pbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0 4px;padding:11px;border-radius:12px;border:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--ink);background:#fff}
 .pbtn svg{width:17px;height:17px}
