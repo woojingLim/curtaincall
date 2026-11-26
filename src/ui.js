@@ -52,7 +52,7 @@ function renderTop(){const d=S.day,md=d.date.slice(5).replace('-','.');
 
 /* ---------- 관람객: 길찾기 ---------- */
 function timeChips(){const e=calEnd(S.day),cs=[['end','종료 직후',e],['30','+30분',e+30],['60','+1시간',e+60]];
-  return `<div class="timechips" role="group" aria-label="출발 시각">${cs.map(([k,t,m])=>`<button class="chip" data-dep="${k}" data-m="${m}" aria-pressed="${S.depKey===k}">${t} <small>${hm(m)}</small></button>`).join('')}<input type="time" id="depIn" value="${hm(S.dep)}" aria-label="출발 시각 직접 입력"></div>${e!==endMin(S.day)?`<p class="small muted" style="margin:6px 2px 0">추정 종료는 ${S.day.end}(러닝타임 가정)이지만, 기록상 ${Math.floor(e/60)}시대 승차가 가장 많아 ${hm(e)}을 '종료 직후'로 봤어요.</p>`:''}`}
+  return `<div class="timechips" role="group" aria-label="출발 시각">${cs.map(([k,t,m])=>`<button class="chip" data-dep="${k}" data-m="${m}" aria-pressed="${S.depKey===k}">${t} <small>${hm(m)}</small></button>`).join('')}<input type="time" id="depIn" value="${hm(S.dep)}" aria-label="출발 시각 직접 입력"></div>${e!==endMin(S.day)?`<p class="small muted" style="margin:6px 2px 0">기록상 가장 붐빈 ${hm(e)}을 '종료 직후'로 잡았어요</p>`:''}`}
 function tripBox(){const vs=venues(S.day);
   return `<div class="trip"><div class="tr from"><span class="pin">${IC.walk}</span><div class="grow"><span class="lab">출발 · 공연장</span><span class="val">${esc(shortV(S.venue))}</span>
     ${vs.length>1?`<div class="vchips">${vs.map(v=>`<button class="chip" data-venue="${esc(v)}" aria-pressed="${v===S.venue}">${esc(shortV(v))}</button>`).join('')}</div>`:''}</div></div>
@@ -78,8 +78,8 @@ function optCard(o){const open=S.sel===o.key,stn=GRP[o.g].n+'역';
 function waitCard(){const cand=OPTS.filter(o=>o.pick&&o.cr);if(!cand.length)return '';const b=cand.reduce((a,o)=>o.w<a.w?o:a);
   const h1=Math.floor((b.arr+60)/60),c1=crowd(S.day,b.k,h1),later=b.last!=null&&b.last>=b.arr+60+ACCESS;
   let msg='',sub='';const nm=`${GRP[b.g].n}역 ${b.ln}호선`;
-  if(b.cr.lv>=2&&c1&&c1.lv<b.cr.lv&&later){msg=`가장 가까운 ${nm}, 1시간 뒤엔 ${LV[b.cr.lv].t} → ${LV[c1.lv].t.replace('승차 ','')}`;sub=`${h1}시대 승차는 ${ratioTxt(c1.r)} 수준이었어요. 막차 전까지 시간이 넉넉하니 주변에서 쉬었다 가도 돼요.`}
-  else if(b.cr.lv>=2){msg=`가장 가까운 ${nm}, 2025년 이 시간엔 ${LV[b.cr.lv].t}`;sub='역 입구가 붐비면 개찰구까지 시간이 더 걸릴 수 있어요. 아래 덜 붐비는 역을 함께 보세요.'}
+  if(b.cr.lv>=2&&c1&&c1.lv<b.cr.lv&&later){msg=`가장 가까운 ${nm}, 1시간 뒤엔 ${LV[b.cr.lv].t} → ${LV[c1.lv].t.replace('승차 ','')}`;sub='막차까지 여유가 있어 주변에서 쉬었다 가도 돼요.'}
+  else if(b.cr.lv>=2){msg=`가장 가까운 ${nm}, 2025년 이 시간엔 ${LV[b.cr.lv].t}`;sub='아래 덜 붐볐던 역도 함께 보세요.'}
   else return '';
   const onWay=(ln,st)=>OPTS.some(o=>{if(o.ln!==ln)return false;const od=M.lines[ln].order,a=od.indexOf(SK[o.k].n),t=od.indexOf(o.target),x=od.indexOf(st);return (x-a)*(t-a)>0&&Math.abs(x-a)<=Math.abs(t-a)});
   const ps=M.poi.filter(p=>p.when.includes('after')&&(!p.via||p.via.some(([ln,st])=>onWay(ln,st)))).slice(0,3);
@@ -100,70 +100,62 @@ const distMin=(a,b)=>Math.round(Math.hypot(a[0]-b[0],a[1]-b[1])*1.45/65);
 function vNear(){const vxy=VN[S.venue];const ps=M.poi.filter(p=>p.when.includes(S.poiWhen));
   let h=`<div class="chips" style="margin-bottom:12px"><button class="chip" data-when="before" aria-pressed="${S.poiWhen==='before'}">공연 전</button><button class="chip" data-when="after" aria-pressed="${S.poiWhen==='after'}">공연 끝나고</button></div>`;
   if(S.poiWhen==='after'){const calm=Object.keys(GRP).map(g=>({g,c:crowdG(S.day,g,Math.floor((S.dep+walkOf(S.venue,g))/60)),w:walkOf(S.venue,g)})).filter(x=>x.c&&x.c.lv<=1&&x.g!=='c').sort((a,b)=>a.w-b.w)[0];
-    if(calm)h+=`<div class="wait"><span class="wi">${IC.walk}</span><div><b>걸으면서 붐비는 역 피하기</b><p>${esc(shortV(S.venue))}에서 ${GRP[calm.g].n}역까지 ${calm.w}분. 2025년 이날 같은 시간 ${GRP[calm.g].n}역은 <b>${LV[calm.c.lv].t}</b>이었어요. 가는 길에 아래 장소를 지나요.</p>${kakaoBtn(S.venue,calm.g)}</div></div>`}
-  h+=`<div class="poilist">${ps.map(p=>{const c=CAT[p.cat],tags=[c.t];if(p.xy&&vxy)tags.push(`공연장에서 걸어서 약 ${distMin(vxy,p.xy)}분`);else if(!p.xy&&!p.via)tags.push('공원 안');
+    if(calm)h+=`<div class="wait"><span class="wi">${IC.walk}</span><div><b>걸으면서 붐비는 역 피하기</b><p>${GRP[calm.g].n}역까지 ${calm.w}분 · 2025년 이 시간 <b>${LV[calm.c.lv].t}</b></p>${kakaoBtn(S.venue,calm.g)}</div></div>`}
+  h+=`<div class="poilist">${ps.map(p=>{const c=CAT[p.cat],tags=[c.t];if(p.xy&&vxy)tags.push(`걸어서 약 ${distMin(vxy,p.xy)}분`);else if(!p.xy&&!p.via)tags.push('공원 안');
     if(p.via)tags.push(p.via.map(([ln,s])=>`${ln}호선 ${s}역`).join(' · '));if(p.near&&p.near.length)tags.push(p.near.map(g=>GRP[g].n+'역').join('·')+' 가까이');
     return `<button class="pc" data-poi="${p.id}" aria-pressed="${S.poiSel===p.id}"><span class="pi ${p.cat}">${IC[c.ic]}</span><span><b>${esc(p.n)}</b><p>${esc(p.d)}</p><span class="tg">${tags.map(t=>`<span>${esc(t)}</span>`).join('')}</span></span></button>`}).join('')}</div>`;
-  return h+`<p class="note">장소는 위키백과 등으로 확인한 곳만 담았어요. 운영 시간과 정확한 위치는 방문 전 공식 안내를 확인하세요. 걸리는 시간(약)은 지도 거리로 어림한 값이에요.</p>`}
-
+  return h}
 /* ---------- 관람객: 막차 ---------- */
-function vLast(){const d=S.day,dt=dayType(d);let h=`<p class="small muted" style="margin-bottom:10px">${dt} 시각표 · ${hm(S.dep)}에 ${esc(shortV(S.venue))}에서 걸어갈 때 남는 시간</p>`;
+function vLast(){const d=S.day,dt=dayType(d);let h=`<p class="small muted" style="margin-bottom:10px">${dt} 시각표 · ${hm(S.dep)} 출발 기준 남은 시간</p>`;
   Object.keys(GRP).forEach(g=>{const w=walkOf(S.venue,g),arr=S.dep+w;let rows='';
     GRP[g].k.forEach(k=>{const ln=SK[k].ln;['UP','DOWN'].forEach(dir=>{const t=trainsFrom(k,dt,dir);if(!t.length)return;const last=t[t.length-1],full=t.filter(r=>M.dests[r[1]]===END_OF[ln][dir]),lf=full.length?full[full.length-1]:null;
       const lft=last[0]-arr,cls=lft<0?'bad':lft<30?'warn':'ok';
       rows+=`<div class="lt">${lb(ln)}<span class="t"><b>${hm(last[0])}</b> ${esc(M.dests[last[1]])}행${lf&&lf!==last?`<small>끝까지(${esc(END_OF[ln][dir])}) ${hm(lf[0])}${lf[0]<arr?' · 이미 끊김':''}</small>`:''}</span><span class="left ${cls}">${lft<0?'끊김':lft>=120?Math.floor(lft/60)+'시간 '+(lft%60)+'분':lft+'분'}</span></div>`})});
     h+=`<div class="ltcard"><div class="hd"><b>${GRP[g].n}역</b><span class="muted small">도보 ${w}분</span></div>${rows}</div>`});
-  return h+`<p class="note">서울교통공사 열차운행시각표 기준이에요. 늦은 시간에는 짧게 가는 열차(군자행·삼전행 등)가 많아요. 시각표는 바뀔 수 있으니 출발 전 공식 앱에서 확인하세요.</p>`}
-
+  return h+srcNote()}
 /* ---------- 운영자 ---------- */
 function opsHour(){if(S.hour==null){S.hour=S.day.sub?peakOf(S.day.sub,S.day).ph:Math.min(23,Math.floor(endH(S.day)))}return S.hour}
 function grpVal(d,g,h){if(!d.sub)return null;const ks=GRP[g].k;if(ks.some(k=>d.sub[k]?.[h]==null))return null;return ks.reduce((a,k)=>a+d.sub[k][h],0)}
 let SUM=null;const pct=(a,b)=>((1-a/b)*100).toFixed(1)+'%';
 function vSum(){SUM=SUM||summary();const s=SUM;
-  return `<div class="ident"><b>운영 의사결정 시뮬레이터</b><p>과거 공연·주차·지하철 공공데이터를 결합해, 공연이 끝난 뒤 혼잡을 줄일 운영 대안(종료 시각 조정·대체 역 안내)을 미리 비교하는 도구예요. 실시간 혼잡·안전·대기시간 예측 서비스가 아니에요.</p><button class="hbtn" data-help>${IC.help}사용법 보기</button></div>
-  <div class="sec"><h3>${IC.chart}관측 결과 · 2025년 기록</h3><div class="tiles">
-    <div class="tile"><b>${s.days}일</b><small>분석 공연일(공연 항목 ${s.shows}건)</small></div>
-    <div class="tile hot"><b>${fmt(s.peak)}명</b><small>올림픽공원역(5·9호선) 평균 피크 1시간 승차</small></div>
-    <div class="tile hot"><b>${s.ratio.toFixed(1)}배</b><small>비공연 평일 같은 시간 평균 대비(평균의 비)</small></div>
-    <div class="tile"><b>${pct(s.g60.v,s.g0.v)}</b><small>종료 예정 간격 60분 이상 ${s.g60.n}일과 0분 ${s.g0.n}일의 역 피크 차이(관측 차이, 인과효과 아님)</small></div></div>
-    <p class="note" style="margin-top:2px">관람객 규모·요일·추정 종료 시간대·공연장 구성·공연 수를 함께 넣은 회귀(관람객 수가 있는 77일)에서도 역 피크는 약 20%(95% 신뢰구간 10~30%) 낮게 나타났어요. 관측 연관이며 인과효과는 아니에요(결과: regress_v3.py).</p></div>
-  <div class="sec"><h3>${IC.sliders}시나리오 결과 · 가정 기반 계산</h3><div class="card bars" style="padding:8px 14px">
+  return `<div class="ident"><b>운영 의사결정 시뮬레이터</b><p>공연이 끝난 뒤 혼잡을 줄일 대안을 2025년 기록으로 미리 비교해요. 실시간 정보가 아니에요.</p><button class="hbtn" data-help>${IC.help}사용법 보기</button></div>
+  <div class="sec"><h3>${IC.chart}관측 · 2025년 기록${ib('read')}</h3><div class="tiles">
+    <div class="tile"><b>${s.days}일</b><small>분석 공연일</small></div>
+    <div class="tile hot"><b>${fmt(s.peak)}명</b><small>올림픽공원역 피크 1시간</small></div>
+    <div class="tile hot"><b>${s.ratio.toFixed(1)}배</b><small>평일 같은 시간 대비</small></div>
+    <div class="tile"><b>${pct(s.g60.v,s.g0.v)}</b><small>종료 60분 이상 엇갈린 날 · 인과 아님</small></div></div></div>
+  <div class="sec"><h3>${IC.sliders}시나리오 · 가정 계산${ib('scen')}</h3><div class="card bars" style="padding:8px 14px">
     ${[30,60,90].map(m=>`<div class="br"><span><b>종료 ${m}분 조정</b></span><span class="track"><span class="fill" style="width:${(1-s.shift[m].after/s.shift[m].before)/.3*100}%;background:#12A150"></span></span><span class="v">${pct(s.shift[m].after,s.shift[m].before)}<small>${s.shift[m].n}일 평균</small></span></div>`).join('')}
-    ${[10,20,30].map(p=>`<div class="br"><span><b>대체 역 ${p}%</b></span><span class="track"><span class="fill" style="width:${(1-s.alt[p].after/s.base)/.3*100}%;background:#2563EB"></span></span><span class="v">${pct(s.alt[p].after,s.base)}<small>${s.days}일 평균</small></span></div>`).join('')}</div>
-    <p class="note" style="margin-top:6px">종료 시각 조정은 종료 예정 간격 0분인 두 공연일 중 자정 전에 계산이 끝나는 날만 써요. 30·60분과 90분은 표본이 달라 바로 비교하면 안 돼요. 두 시나리오는 따로 계산했으니 감소율을 더하지 마세요.</p></div>
-  <details class="src" open><summary>분석 기준과 한계</summary><p>피크: 마지막 추정 종료 시각이 속한 시간대 ±2시간 안의 최대 1시간 · 승차: 5호선 승차 + 9호선 순승차(환승 제외) · 종료 시각: 시작 시각 + 공연 유형별 러닝타임 가정(콘서트 150분, 팬미팅 120분, 쇼케이스 90분) · 비교 기준: 비공연 월~목 시간대별 평균(주말 효과는 통제 못 함) · 평일 평균 최고치는 역 수용능력이 아님 · 주차 순감소 = 연속 시각 주차 차량 수의 차이(실제 출차 대수 아님) · 공연 기준표 293건(151일) 중 종료 시각을 정할 수 없는 페스티벌 단독일 7일을 빼고 144일·286건을 분석.</p></details>
-  <p class="note">위쪽에서 공연을 고르면 '공연일'·'역별'·'주차'에서 그날 기록을, '시뮬레이터'에서 그날 가정 계산을 볼 수 있어요. 관람객에게 보여 줄 안내 화면은 위쪽 '관객 안내'에서 미리 볼 수 있어요.</p>`}
-function vOver(){const d=S.day;if(!d.sub)return `<p class="empty">이 공연일은 지하철 기록이 없어요.</p>`;const {ph,mx}=peakOf(d.sub,d),pk=parkPeak(d),hr=opsHour(),[a,b]=winOf(d);
-  return `<div class="tiles"><div class="tile hot"><b>${hh(ph)}</b><small>추정 종료 ±2시간 중 올림픽공원역 승차가 가장 많은 1시간</small></div><div class="tile hot"><b>${fmt(mx)}명</b><small>그때 승차 · ${ratioTxt(mx/UMAX.c)}</small></div>
-    <div class="tile"><b>${pk?hh(pk.ph):'기록 없음'}</b><small>같은 구간 주차 순감소가 가장 큰 1시간${pk?` (${fmt(pk.mx)}대)`:''}</small></div><div class="tile"><b>${fmt(d.aud)}명</b><small>공연 관람객(연계 데이터)</small></div></div>
-  <div class="card"><h4>올림픽공원역 시간대 승차 (5·9호선)</h4><p class="cap">진한 색 5호선 승차, 옅은 색 9호선 순승차 · 점선은 비공연 평일 평균 · 주황 띠는 추정 공연 시간</p>${bars({vals:d.sub.o,stack:d.sub.p,base:SBC,H0:12,H1:23,hl:hr,color:'#E5383B',band:[startH(d),endH(d)],h:150})}
+    ${[10,20,30].map(p=>`<div class="br"><span><b>대체 역 ${p}%</b></span><span class="track"><span class="fill" style="width:${(1-s.alt[p].after/s.base)/.3*100}%;background:#2563EB"></span></span><span class="v">${pct(s.alt[p].after,s.base)}<small>${s.days}일 평균</small></span></div>`).join('')}</div></div>`}
+function vOver(){const d=S.day;if(!d.sub)return `<p class="empty">이 공연일은 지하철 기록이 없어요.</p>`;const {ph,mx}=peakOf(d.sub,d),pk=parkPeak(d),hr=opsHour();
+  return `<div class="tiles"><div class="tile hot"><b>${hh(ph)}</b><small>역 피크 시간</small></div><div class="tile hot"><b>${fmt(mx)}명</b><small>올림픽공원역 · 평일 최고치의 ${(mx/UMAX.c).toFixed(1)}배</small></div>
+    <div class="tile"><b>${pk?hh(pk.ph):'기록 없음'}</b><small>주차 순감소 피크${pk?` · ${fmt(pk.mx)}대`:''}</small></div><div class="tile"><b>${fmt(d.aud)}명</b><small>관람객</small></div></div>
+  <div class="card"><h4>올림픽공원역 시간대 승차${ib('read')}</h4>${bars({vals:d.sub.o,stack:d.sub.p,base:SBC,H0:12,H1:23,hl:hr,color:'#E5383B',band:[startH(d),endH(d)],h:150})}
+  <div class="leg"><span><i style="background:#E5383B"></i>5호선</span><span><i style="background:#E5383B;opacity:.55"></i>9호선</span><span><i class="ln"></i>평일 평균</span><span><i style="background:#FFE2BF"></i>공연 시간</span></div>
   <div class="ctl"><div class="lab"><span>지도에 보여 줄 시간</span><output>${hh(hr)}</output></div><input type="range" id="hourIn" min="12" max="23" step="1" value="${hr}" aria-label="지도 시간"></div>
   <button class="play" id="playBtn">${S.playing?IC.pause+'멈춤':IC.play+'시간 흐름 재생'}</button></div>
-  <button class="pbtn" id="printDay">${IC.print}이 공연일 운영 검토표 인쇄 · PDF 저장</button>
-  <p class="note">피크는 ${a}시~${b+1}시(추정 종료 ${d.end} ±2시간)에서 찾았어요. 지도의 원 크기는 그 시간 승차 인원, 색은 각 역의 평일 평균 최고치와 비교한 정도예요(수용능력 아님).</p>`}
+  <button class="pbtn" id="printDay">${IC.print}이 공연일 운영 검토표 인쇄 · PDF 저장</button>`}
 function vStn(){const d=S.day;if(!d.sub)return `<p class="empty">이 공연일은 지하철 기록이 없어요.</p>`;const hr=opsHour();
   const rows=Object.keys(GRP).map(g=>{const v=grpVal(d,g,hr),u=UMAX[g],r=v!=null?v/u:null,lv=r==null?null:r<.6?0:r<1?1:r<1.6?2:3;
     return `<div class="br"><span><b>${GRP[g].n}</b><br>${GRP[g].k.map(k=>lb(SK[k].ln)).join(' ')}</span><span class="track"><span class="fill" style="width:${Math.min(100,(v||0)/Math.max(v||0,u*1.25)*100)}%;background:${lv==null?'#ccc':LV[lv].c}"></span><span class="mark" style="left:${Math.min(100,u/Math.max(v||0,u*1.25)*100)}%"></span></span><span class="v">${fmt(v)}명<small>${r==null?'':r>=1?r.toFixed(1)+'배':Math.round(r*100)+'%'}</small></span></div>`}).join('');
   return `<div class="ctl"><div class="lab"><span>시간</span><output>${hh(hr)}</output></div><input type="range" id="hourIn" min="12" max="23" step="1" value="${hr}"></div>
-  <div class="card bars"><h4>역별 승차 · 평일 평균 최고치와 비교</h4><p class="cap">세로 막대는 각 역의 평일 평균 최고치(비공연 월~목 평균 중 가장 많은 1시간). 역 수용능력이 아니에요.</p>${rows}</div>
-  <p class="note">2025년 144일 모두, 올림픽공원역 피크 시간에 주변 4개 역(공연장에서 걸어서 15~29분) 승차는 각 역의 평일 평균 최고치 이내였어요. 9호선은 환승을 뺀 순승차예요.</p>`}
+  <div class="card bars"><h4>역별 승차${ib('read')}</h4><p class="cap">세로 선 = 평일 평균 최고치(수용능력 아님)</p>${rows}</div>`}
 function vPark(){const d=S.day;const pk=parkPeak(d);if(!d.hrs.some(v=>v!=null))return `<p class="empty">이 공연일은 연계 데이터에 주차 기록이 없어요.</p>`;const o=outflow(d.hrs);
-  return `<div class="tiles"><div class="tile hot"><b>${pk?hh(pk.ph):'기록 없음'}</b><small>추정 종료 ±2시간 중 주차 순감소가 가장 큰 1시간</small></div><div class="tile"><b>${pk?fmt(pk.mx)+'대':'–'}</b><small>그 1시간 순감소(출차 − 입차)</small></div></div>
-  <div class="card"><h4>시간대별 주차 차량</h4><p class="cap">그 시각 주차장에 있던 차량 · 점선은 비공연 평일 평균</p>${bars({vals:d.hrs,base:D.base,H0:10,H1:23,hl:pk?.ph,color:'#2563EB',band:[startH(d),endH(d)],h:150})}</div>
-  <div class="card"><h4>1시간 주차 순감소</h4><p class="cap">다음 1시간 사이 줄어든 차량 수 = 출차 − 입차. 실제 출차 대수가 아니에요</p>${bars({vals:o.map((v,h)=>h>=10&&v!=null?Math.max(0,v):null),H0:10,H1:22,hl:pk?.ph,color:'#F06A00',h:140})}</div>
-  <div class="card"><h4>주차 구역 참고 (팀 분석)</h4><p class="cap" style="font-size:12.5px;color:#475467;line-height:1.55">1번 팀원이 주차장 혼잡도 정보(2025년 공연·행사일 71일)로 본 결과, P6·P5·P4가 오후 1시경 가장 먼저·자주 만차였고(28~33일) P10·P1A는 12~17일이었어요. 구역 원자료는 재검증 후 쓰고, 주차 분산 효과는 수치로 예측하지 않아요.</p></div>`}
+  return `<div class="tiles"><div class="tile hot"><b>${pk?hh(pk.ph):'기록 없음'}</b><small>주차 순감소 피크</small></div><div class="tile"><b>${pk?fmt(pk.mx)+'대':'–'}</b><small>그 1시간 순감소</small></div></div>
+  <div class="card"><h4>시간대별 주차 차량${ib('read')}</h4>${bars({vals:d.hrs,base:D.base,H0:10,H1:23,hl:pk?.ph,color:'#2563EB',band:[startH(d),endH(d)],h:150})}
+  <div class="leg"><span><i style="background:#2563EB"></i>주차 차량</span><span><i class="ln"></i>평일 평균</span><span><i style="background:#FFE2BF"></i>공연 시간</span></div></div>
+  <div class="card"><h4>1시간 주차 순감소</h4><p class="cap">출차 − 입차 · 실제 출차 수 아님</p>${bars({vals:o.map((v,h)=>h>=10&&v!=null?Math.max(0,v):null),H0:10,H1:22,hl:pk?.ph,color:'#F06A00',h:140})}</div>
+  <button class="srclink" data-help="park">주차 구역별 참고(팀 분석) 보기</button>`}
 function vSim(){const d=S.day,Sx=d.sub;if(!Sx)return `<p class="empty">이 공연일은 지하철 기록이 없어요.</p>`;const C=combOf(Sx),st=stagger(C,SBC,d,S.shift),{ph,mx}=peakOf(Sx,d),a=altScenario(Sx,d,S.alt);let h='';
-  h+=`<p class="small muted" style="margin:0 2px 10px">2025년 기록에 가정을 얹은 계산이에요. 두 시나리오는 따로 계산하니 감소율을 더하지 마세요.</p>`;
-  h+=`<div class="card"><h4>종료 시각 조정</h4><p class="cap">종료 예정 간격 0분인 두 공연 중 좌석이 적은 공연의 몫(좌석 비율)을 늦춰요. 인원은 옮길 뿐 사라지지 않아요.</p>`;
-  if(!st)h+=`<p class="empty" style="padding:14px 4px">이날은 계산 대상이 아니에요. 종료 예정 간격 0분인 공연 2개가 있는 날(2025년 23일)만 계산해요. 공연 목록에서 '동시 종료 예정'을 눌러 보세요.</p></div>`;
+  h+=`<div class="card"><h4>종료 시각 조정 · 가정 계산${ib('scen')}</h4>`;
+  if(!st)h+=`<p class="empty" style="padding:14px 4px">종료 예정 간격 0분인 두 공연일(2025년 23일)만 계산해요. 공연 목록에서 '동시 종료 예정'을 골라 보세요.</p></div>`;
   else{h+=`<div class="ctl"><div class="lab"><span>작은 공연 종료를 늦추는 시간</span><output>${S.shift}분</output></div><input type="range" id="shIn" min="0" max="120" step="15" value="${S.shift}"></div>
-    <div class="tiles"><div class="tile"><b>${fmt(st.before)}명</b><small>비교 구간(${st.lo}~${st.hi+1}시) 관측 피크</small></div><div class="tile ${st.overflow>0?'':'good'}"><b>${st.overflow>0?'판정 보류':pct(st.after,st.before)}</b><small>${st.overflow>0?`${fmt(st.overflow)}명이 자정 이후로 넘어가 계산 범위 밖`:`조정 뒤 계산 피크 ${fmt(st.after)}명`}</small></div></div>
-    ${barsCompare(C,st.nw,Math.max(12,st.lo-1))}<div class="leg"><span><i style="background:#F3B3B4"></i>관측</span><span><i style="background:#12A150"></i>조정 가정(계산)</span><span class="muted">작은 공연 몫 ${(st.w*100).toFixed(1)}%(좌석 가정)</span></div></div>`}
-  h+=`<div class="card"><h4>대체 역 분산</h4><p class="cap">원래 피크 시간(${hh(ph)})의 평일 대비 초과 승차 중 일부를 주변 4개 역에 '평일 평균 최고치까지의 여유'만큼 나눠요. 여유를 넘는 몫은 옮기지 않아요(미배분)</p>
-  <div class="ctl"><div class="lab"><span>다른 역으로 옮기는 비율(가정)</span><output>${S.alt}%</output></div><input type="range" id="alIn" min="0" max="50" step="5" value="${S.alt}"></div>
-  <div class="tiles"><div class="tile"><b>${fmt(mx)}→${fmt(a.peak)}</b><small>비교 구간 피크(다른 시간대까지 다시 확인)</small></div><div class="tile good"><b>${pct(a.peak,mx)}</b><small>피크 감소 · 옮긴 인원 ${fmt(a.moved)}명${a.unallocated>.5?` · 미배분 ${fmt(a.unallocated)}명`:''}</small></div></div>
-  <div class="bars">${NB.map(([k,n,ln],i)=>{const sc=Math.max(a.after[i],UMAX[k])*1.15;return `<div class="br"><span><b>${n.replace('역','')}</b> ${lb(ln)}</span><span class="track"><span class="fill" style="width:${a.after[i]/sc*100}%;background:#2563EB"></span><span class="mark" style="left:${UMAX[k]/sc*100}%"></span></span><span class="v">${fmt(Sx[k][ph])}→${fmt(a.after[i])}<small>참고 상한 ${fmt(UMAX[k])}</small></span></div>`}).join('')}</div></div>
-  <p class="note">참고 상한(평일 평균 최고치)은 역 수용능력이 아니에요. 걸어가는 시차·목적지·환승·막차는 반영하지 않았어요. 실제 대기시간 단축이나 안전을 보장하는 결과가 아니에요. 주차는 입·출차가 분리된 자료가 없어 수치로 예측하지 않아요.</p>`;return h}
+    <div class="tiles"><div class="tile"><b>${fmt(st.before)}명</b><small>관측 피크(${st.lo}~${st.hi+1}시)</small></div><div class="tile ${st.overflow>0?'':'good'}"><b>${st.overflow>0?'판정 보류':pct(st.after,st.before)}</b><small>${st.overflow>0?'자정 이후로 넘어가 계산 범위 밖':`조정 뒤 ${fmt(st.after)}명`}</small></div></div>
+    ${barsCompare(C,st.nw,Math.max(12,st.lo-1))}<div class="leg"><span><i style="background:#F3B3B4"></i>관측</span><span><i style="background:#12A150"></i>조정 가정</span></div></div>`}
+  h+=`<div class="card"><h4>대체 역 분산 · 가정 계산${ib('scen')}</h4>
+  <div class="ctl"><div class="lab"><span>주변 4개 역으로 옮기는 비율</span><output>${S.alt}%</output></div><input type="range" id="alIn" min="0" max="50" step="5" value="${S.alt}"></div>
+  <div class="tiles"><div class="tile"><b>${fmt(mx)}→${fmt(a.peak)}</b><small>올림픽공원역 피크</small></div><div class="tile good"><b>${pct(a.peak,mx)}</b><small>옮긴 인원 ${fmt(a.moved)}명${a.unallocated>.5?` · 미배분 ${fmt(a.unallocated)}명`:''}</small></div></div>
+  <div class="bars">${NB.map(([k,n,ln],i)=>{const sc=Math.max(a.after[i],UMAX[k])*1.15;return `<div class="br"><span><b>${n.replace('역','')}</b> ${lb(ln)}</span><span class="track"><span class="fill" style="width:${a.after[i]/sc*100}%;background:#2563EB"></span><span class="mark" style="left:${UMAX[k]/sc*100}%"></span></span><span class="v">${fmt(Sx[k][ph])}→${fmt(a.after[i])}<small>상한 ${fmt(UMAX[k])}</small></span></div>`}).join('')}</div></div>`;return h}
 function barsCompare(a,b,H0){const H1=23,W=340,h=150,top=14,ch=h-34,left=4,pw=W-8,n=H1-H0+1,bw=pw/n;const ymax=Math.max(1,...a.slice(H0,H1+1).filter(v=>v!=null),...b.slice(H0,H1+1).filter(v=>v!=null))*1.12,y=v=>top+ch-v/ymax*ch;
   let s=`<svg viewBox="0 0 ${W} ${h}" style="width:100%;height:auto;display:block;margin-top:8px">`;
   for(let i=H0;i<=H1;i++){const x=left+(i-H0)*bw;if(a[i]!=null)s+=`<rect x="${x+bw*.12}" y="${y(a[i])}" width="${bw*.38}" height="${top+ch-y(a[i])}" rx="3" fill="#F3B3B4"/>`;if(b[i]!=null)s+=`<rect x="${x+bw*.5}" y="${y(b[i])}" width="${bw*.38}" height="${top+ch-y(b[i])}" rx="3" fill="#12A150"/>`;
@@ -176,27 +168,27 @@ function planQuery(){const p=S.plan,sh=p.shows.filter(s=>s.on);if(!sh.length)ret
   const wd='일월화수목금토'[new Date(p.date+'T00:00:00').getDay()],vs=new Set(sh.map(s=>s.v));
   return {q:{vs,kspo:vs.has('KSPO DOME'),eh:Math.min(23,Math.floor(last/60)),g:gapCat(sh.length,gap),wd:wdGroup(wd),aud:+p.aud>0?+p.aud:null},last,gap,wd,n:sh.length,sh}}
 function vPlan(){const P=S.plan,pq=planQuery();LOO=LOO||{a:looCheck(false),b:looCheck(true)};const f1=x=>(x*100).toFixed(1)+'%';
-  let h=`<p class="banner">${IC.clock}2025년 비슷한 공연일 기록으로 보는 참고 범위예요. 예측 모델이나 실시간 정보가 아니에요.</p>
-  <div class="card"><h4>새 공연 일정</h4><p class="cap">공연장·시작 시각·유형을 고르면 러닝타임 가정으로 추정 종료 시각을 계산해 비슷한 날을 찾아요</p>
+  let h=`<p class="banner">${IC.clock}<span>2025년 비슷한 공연일로 보는 참고 범위예요. 예측·실시간 정보가 아니에요.</span></p>
+  <div class="card"><h4>새 공연 일정</h4>
   <div class="fld"><span>날짜</span><input type="date" id="planDate" value="${P.date}"></div>
   ${P.shows.map((s,i)=>`<div class="prow"><button class="chip" data-pv="${i}" aria-pressed="${s.on}">${esc(s.v==='티켓링크 라이브 아레나(핸드볼경기장)'?'티켓링크':shortV(s.v))}</button><input type="time" data-ps="${i}" value="${s.s}" min="10:00" max="21:30" step="900" aria-label="${esc(shortV(s.v))} 시작 시각" ${s.on?'':'disabled'}><select data-pt="${i}" aria-label="${esc(shortV(s.v))} 공연 유형" ${s.on?'':'disabled'}>${Object.keys(RUNTIME).map(t=>`<option ${t===s.t?'selected':''}>${t}</option>`).join('')}</select></div>`).join('')}
-  <div class="fld"><span>예상 관객 수 <small class="muted">(선택, 판매 현황 등)</small></span><input type="number" id="planAud" min="0" step="500" value="${P.aud}" placeholder="예: 15000"></div></div>`;
+  <div class="fld"><span>예상 관객 수 <small class="muted">(선택)</small></span><input type="number" id="planAud" min="0" step="500" value="${P.aud}" placeholder="예: 15000"></div></div>`;
   if(!pq)return h+`<p class="empty">공연장을 하나 이상 골라 주세요.</p>`;
   const r=similarCases(pq.q,7),q=pq.q;SIMQ=r;
-  h+=`<div class="tiles"><div class="tile"><b>${hm(pq.last)}</b><small>추정 종료(마지막 공연)${pq.n>1?` · 종료 간격 ${pq.gap}분`:''}</small></div>
-    <div class="tile hot"><b>${hh(r.ph)}</b><small>올림픽공원역 승차가 가장 많을 것으로 보이는 시간(비슷한 날 기준)</small></div>
-    <div class="tile hot"><b>${fmt(r.med)}명</b><small>피크 1시간 승차 참고값(비슷한 7일 중앙값) · 범위 ${fmt(r.lo)}~${fmt(r.hi)}명</small></div>
-    <div class="tile"><b>${r.park?fmt(r.park.med)+'대':'–'}</b><small>주차 순감소 피크 참고값(비슷한 날 중 주차 기록이 있는 ${r.park?r.park.n:0}일 중앙값)</small></div></div>`;
+  h+=`<div class="tiles"><div class="tile"><b>${hm(pq.last)}</b><small>추정 종료${pq.n>1?` · 간격 ${pq.gap}분`:''}</small></div>
+    <div class="tile hot"><b>${hh(r.ph)}</b><small>역 피크 예상 시간</small></div>
+    <div class="tile hot"><b>${fmt(r.med)}명</b><small>피크 1시간 · ${fmt(r.lo)}~${fmt(r.hi)}명</small></div>
+    <div class="tile"><b>${r.park?fmt(r.park.med)+'대':'–'}</b><small>주차 순감소 피크</small></div></div>
+  <button class="accline" data-help="acc">${IC.info}<span>시험 정확도 · 범위 안 ${f1(LOO.a.cov)} · 피크 시간 ±1시간 ${f1(LOO.a.h1)}</span></button>`;
   const items=[];
   if(pq.n>=2&&pq.gap===0){const el=r.cases.find(c=>stagger(combOf(c.d.sub),SBC,c.d,0));
-    items.push(`<li><b>두 공연의 추정 종료가 같아요.</b> 2025년 종료 간격 0분인 날의 역 피크 평균은 6,302명, 60분 이상인 날은 5,207명이었어요(관측 차이 17.4%, 인과 아님). 대관 협의 때 종료 간격을 함께 검토해 보세요.${el?` <button class="linkbtn" data-goday="${el.d.id}" data-gotab="sim">비슷한 날(${el.d.date.slice(5).replace('-','.')}) 시뮬레이터 열기</button>`:''}</li>`)}
-  items.push(`<li><b>${hh(r.ph)} 전후 올림픽공원역 안내 검토.</b> 2025년 피크 승차의 약 73%가 9호선이었어요.</li>`);
-  items.push(`<li><b>주차 출구 안내를 역 안내보다 먼저 검토.</b> 2025년 124일 중 92일은 지하철 피크가 주차 순감소 피크보다 늦었어요.</li>`);
-  items.push(`<li><b>대체 역 안내 문구 준비.</b> 주변 4개 역(걸어서 15~29분)은 2025년 모든 공연일에 피크 시간 승차가 평일 평균 최고치 이내였어요(수용능력 아님).</li>`);
-  h+=`<div class="card"><h4>운영 검토 항목</h4><ul class="chk">${items.join('')}</ul></div>`;
-  h+=`<div class="card"><h4>비슷한 2025년 공연일 7일</h4><p class="cap">공연장 구성·추정 종료 시간대·종료 간격·요일${q.aud?'·관객 수':''}가 가까운 순서 · 누르면 그날 기록을 열어요</p>
-    ${r.cases.map(c=>`<button class="srow" data-goday="${c.d.id}" data-gotab="over"><div class="grow"><div class="sn">${c.d.date.slice(2).replace(/-/g,'.')} (${c.d.wd}) · 추정 종료 ${c.d.end}</div><div class="sm">${esc(venues(c.d).map(shortV).join(' · '))}${c.d.n>1?` · 간격 ${c.d.gap??'–'}분`:''}</div></div><span class="v2"><b>${fmt(c.pk)}명</b><small>${hh(c.ph)}</small></span></button>`).join('')}</div>`;
-  h+=`<details class="src" open><summary>이 참고 범위는 얼마나 맞았나요?</summary><p>2025년 ${LOO.a.n}일을 한 날씩 빼고 나머지로 맞혀 봤어요. 실제 피크가 참고 범위(최소~최대) 안에 든 날 ${f1(LOO.a.cov)}, 중앙값과의 오차는 중앙값 기준 ${f1(LOO.a.medErr)}(30% 이내 ${f1(LOO.a.w30)}), 피크 시간대는 ±1시간 안 ${f1(LOO.a.h1)}였어요. 예상 관객 수를 넣으면 범위 안 ${f1(LOO.b.cov)}, 오차 ${f1(LOO.b.medErr)}예요. 작은 공연이나 녹화 행사처럼 관객이 적은 날은 오차가 커요.</p></details>
+    items.push(`<li><b>두 공연 종료가 같아요</b> · 종료 간격 협의 검토${el?` <button class="linkbtn" data-goday="${el.d.id}" data-gotab="sim">비슷한 날 시뮬레이터</button>`:''}</li>`)}
+  items.push(`<li><b>${hh(r.ph)} 전후 올림픽공원역 안내</b> · 9호선 쪽 중심</li>`);
+  items.push(`<li><b>주차 출구 안내를 역 안내보다 먼저</b></li>`);
+  items.push(`<li><b>대체 역 안내 준비</b> · 도보 15~29분</li>`);
+  h+=`<div class="card"><h4>운영 검토 항목${ib('read')}</h4><ul class="chk">${items.join('')}</ul></div>`;
+  h+=`<div class="card"><h4>비슷한 2025년 공연일 7일</h4>
+    ${r.cases.map(c=>`<button class="srow" data-goday="${c.d.id}" data-gotab="over"><div class="grow"><div class="sn">${c.d.date.slice(2).replace(/-/g,'.')} (${c.d.wd}) · 추정 종료 ${c.d.end}</div><div class="sm">${esc(venues(c.d).map(shortV).join(' · '))}${c.d.n>1?` · 간격 ${c.d.gap??'–'}분`:''}</div></div><span class="v2"><b>${fmt(c.pk)}명</b><small>${hh(c.ph)}</small></span></button>`).join('')}</div>
   <button class="pbtn" id="printPlan">${IC.print}검토표 인쇄 · PDF 저장</button>`;
   return h}
 let SIMQ=null;
@@ -220,8 +212,8 @@ function printPlan(){const pq=planQuery();if(!pq||!SIMQ)return;const r=SIMQ;
   b+=`<p>정확도(2025년 ${LOO.a.n}일 한 날씩 빼고 시험): 실제 피크가 범위 안 ${(LOO.a.cov*100).toFixed(1)}%, 중앙값 오차 ${(LOO.a.medErr*100).toFixed(1)}%, 피크 시간대 ±1시간 ${(LOO.a.h1*100).toFixed(1)}%.</p>`;
   printHTML(`새 일정 미리보기 · ${S.plan.date}`,b)}
 
-function srcNote(){return `<details class="src"><summary>데이터 출처</summary><p>승차: 서울교통공사 역별 일별 시간대별 승하차인원(1~8호선)·9호선 2·3단계(환승 제외 순승차), 2025년 · 혼잡 정도: 각 역이 평소 가장 붐비는 1시간(공연 없는 평일 평균)과 비교 · 열차: 서울교통공사 열차운행시각표 · 도보 시간: 카카오맵 도보 길찾기(큰길 우선) · 공연: 한국체육산업개발 올림픽공원 공연·대관정보, 종료 시각은 공연 유형별 러닝타임 가정 · 지도는 약도예요(역·공연장 좌표는 위키백과, 올림픽홀은 도보 거리로 추정).</p></details>`}
-
+function srcNote(){return `<button class="srclink" data-help="data">데이터 출처 · 주의할 점</button>`}
+const ib=k=>`<button class="ib" data-help="${k}" aria-label="설명 보기">${IC.info}</button>`;
 /* ---------- 지도 동적 레이어 ---------- */
 function drawDyn(){const sc=px(),d=S.day;let s=lineTags(sc);const vxy=VN[S.venue];
   if(S.mode==='aud'){const tab=S.tab.aud;
@@ -275,15 +267,42 @@ function openDests(){const ov=$('#ov');ov.hidden=false;
   <p class="note" style="padding:0 10px">목록에 없는 곳은 같은 노선의 가까운 역을 골라 주세요.</p></div></div>`;
   const draw=()=>{const f=$('#q2').value.trim();$('#dg').innerHTML=(S.dest?`<button class="dcell" data-dest=""><b>도착지 지우기</b><small>역별 상황 보기</small></button>`:'')+M.DEST.filter(t=>!f||t.n.includes(f)||t.sub.includes(f)||t.via.some(v=>v[1].includes(f))).map(t=>`<button class="dcell" data-dest="${t.id}" aria-pressed="${S.dest?.id===t.id}"><span class="lns">${[...new Set(t.via.map(v=>v[0]))].map(lb).join('')}</span><b>${esc(t.n)}</b><small>${esc(t.sub||t.via.map(v=>v[1]+'역').join(' · '))}</small></button>`).join('')};
   draw();$('#q2').addEventListener('input',draw);if(innerWidth>=960)$('#q2').focus()}
-function openHelp(){const ov=$('#ov');ov.hidden=false;
-  const row=(a,b)=>`<div class="hrow"><b>${a}</b><span>${b}</span></div>`;
+function openHelp(key){const ov=$('#ov');ov.hidden=false;LOO=LOO||{a:looCheck(false),b:looCheck(true)};const f1=x=>(x*100).toFixed(1)+'%',s=SUM=SUM||summary();
+  const row=(a,b)=>`<div class="hrow"><b>${a}</b><span>${b}</span></div>`,det=(id,t,body)=>`<details class="hd2" id="h-${id}"><summary>${t}<span>${IC.chev}</span></summary>${body}</details>`;
   ov.innerHTML=`<div class="ovbox" role="dialog" aria-label="도움말"><div class="ovhd"><h2>도움말</h2><button class="x" data-close aria-label="닫기">${IC.x}</button></div><div class="ovlist help">
   <p class="hlead"><b>커튼콜 이후</b>는 2025년 공연·주차·지하철 공공데이터로 공연이 끝난 뒤의 혼잡을 미리 검토하는 도구예요. 실시간 정보가 아니에요.</p>
   <h3>화면 안내</h3><div class="card"><h4>운영자</h4>${row('요약','관측 결과와 시나리오 결과')}${row('새 일정','앞으로의 공연을 넣으면 비슷한 2025년 공연일 7일로 참고 범위')}${row('공연일·역별·주차','고른 날의 시간대별 기록')}${row('시뮬레이터','종료 시각 조정·대체 역 분산 가정 계산')}</div>
   <div class="card"><h4>관객 안내</h4>${row('길찾기','도착지를 고르면 탈 역·열차, 카카오맵 도보 길찾기')}${row('주변','공연 전후 들를 곳')}${row('막차','역별 마지막 열차까지 남은 시간')}</div>
-  <h3>현장에서 쓰는 순서</h3><ol class="flow"><li><b>대관 협의</b><span>'새 일정'에서 종료 간격과 피크 참고 범위를 보고, 검토표를 출력해 기획사와 협의해요(권고).</span></li><li><b>공연 주간</b><span>비슷한 날 기록으로 주차 출구 안내 → 역 안내 순서와 인력 시간을 정해요.</span></li><li><b>공연 당일</b><span>A4 검토표를 현장에 나누고, 관람객에게는 '관객 안내' 화면으로 대체 역·막차를 알려요.</span></li><li><b>공연 뒤</b><span>안내한 날과 안 한 날의 대체 역 승차를 비교해 효과를 확인해요.</span></li></ol>
-  <h3>꼭 알아 둘 점</h3><ul class="chk"><li>색은 각 역의 <b>평일 평균 최고치</b>와 비교한 정도예요. 역 수용능력이 아니에요.</li><li>시나리오는 2025년 기록에 가정을 얹은 계산이에요. 인과효과나 대기시간 단축을 보장하지 않아요.</li><li>대체 역 분산은 가는 길의 안내 인력·야간 조명·유도 표지와 관계기관 협의가 있어야 가능해요.</li><li>종료 시각은 공연 기획사와 협의할 사항이라, 결과는 협의 근거로 써요.</li><li>도보 시간은 카카오맵 '큰길우선' 경로 기준이에요. 밤에는 불 밝은 큰길로 걸어요.</li><li>공연이 늦게 끝나면 길찾기의 출발 시각을 바꿔 보고, 현장에서는 역·공연장 안내를 먼저 따르세요.</li></ul>
-  <p class="hfoot">팀 크라우드제로(류시헌·임우징·석지혜)<br>2026년도 공공데이터 활용 경진대회 출품작 · <a href="https://github.com/woojingLim/curtaincall" target="_blank" rel="noopener">코드·데이터</a></p></div></div>`}
+  <h3>현장에서 쓰는 순서</h3><ol class="flow"><li><b>대관 협의</b><span>'새 일정'에서 종료 간격과 피크 참고 범위를 보고, 검토표를 출력해 기획사와 협의해요(권고).</span></li>
+  <li><b>공연 주간</b><span>비슷한 날 기록으로 주차 출구 안내 → 역 안내 순서와 인력 시간을 정해요.</span></li>
+  <li><b>공연 당일</b><span>A4 검토표를 현장에 나누고, 관람객에게는 '관객 안내' 화면으로 대체 역·막차를 알려요.</span></li>
+  <li><b>공연 뒤</b><span>안내한 날과 안 한 날의 대체 역 승차를 비교해 효과를 확인해요.</span></li></ol>
+  <h3>자세히</h3>
+  ${det('read','숫자 읽는 법',`<ul><li><b>피크</b>: 마지막 공연의 추정 종료 시각이 속한 시간대 ±2시간 안에서 승차가 가장 많은 1시간</li>
+    <li><b>승차</b>: 5호선 승차 + 9호선 순승차(환승 제외). 9호선이 피크의 약 73%</li>
+    <li><b>추정 종료</b>: 시작 시각 + 유형별 러닝타임 가정(콘서트 150분, 팬미팅 120분, 쇼케이스 90분)</li>
+    <li><b>평일 같은 시간 대비</b>: 공연 없는 월~목의 같은 시간 평균과 비교(주말 효과는 통제 못 함)</li>
+    <li><b>평일 평균 최고치</b>: 공연 없는 월~목 평균 중 가장 붐비는 1시간. 지도 색과 역별 세로 선의 기준이며 역 수용능력이 아니에요</li>
+    <li><b>주차 순감소</b>: 연속한 두 시각 주차 차량 수의 차이(출차 − 입차). 실제 출차 대수가 아니에요</li>
+    <li><b>종료 간격 관측</b>: 60분 이상 엇갈린 ${s.g60.n}일과 0분 ${s.g0.n}일의 역 피크 차이 ${pct(s.g60.v,s.g0.v)}. 관람객 규모·요일 등을 보정한 회귀(77일)에서도 약 20%(95% 신뢰구간 10~30%). 관측 연관이며 인과효과가 아니에요</li>
+    <li><b>주변 4개 역</b>(걸어서 15~29분): 2025년 144일 모두 피크 시간 승차가 각 역의 평일 평균 최고치 이내였어요</li>
+    <li><b>분석 범위</b>: 공연 기준표 293건(151일) 중 종료 시각을 정할 수 없는 페스티벌 단독일 7일을 빼고 144일·286건</li></ul>`)}
+  ${det('scen','시나리오 가정',`<ul><li><b>종료 시각 조정</b>: 종료 예정 간격 0분인 두 공연 중 좌석이 적은 공연의 몫(좌석 비율)을 늦춰요. 인원은 옮길 뿐 사라지지 않아요. 자정 이후로 넘어가면 판정을 보류해요. 계산 가능한 날은 20일(90분은 12일)이라 표본이 달라요</li>
+    <li><b>대체 역 분산</b>: 피크 시간의 평일 대비 초과 승차 중 일부를 주변 4개 역에 평일 평균 최고치까지의 여유만큼 나눠요. 넘는 몫은 옮기지 않고(미배분), 다른 시간대까지 피크를 다시 확인해요</li>
+    <li>두 시나리오는 따로 계산하니 감소율을 더하지 않아요. 걷는 시차·목적지·환승·막차는 반영하지 않았어요</li>
+    <li><b>실행 조건</b>: 분산은 가는 길의 안내 인력·야간 조명·유도 표지와 관계기관 협의가 있어야 가능해요. 종료 시각은 공연 기획사와 협의할 사항이라 결과는 협의 근거로 써요</li>
+    <li>실제 대기시간 단축이나 안전을 보장하는 결과가 아니에요. 주차는 입·출차가 분리된 자료가 없어 수치로 예측하지 않아요</li></ul>`)}
+  ${det('acc','새 일정 참고 범위는 얼마나 맞았나요?',`<p>2025년 ${LOO.a.n}일을 한 날씩 빼고 나머지로 맞혀 봤어요. 실제 피크가 참고 범위(비슷한 7일의 최소~최대) 안에 든 날 ${f1(LOO.a.cov)}, 중앙값과의 오차 ${f1(LOO.a.medErr)}(30% 이내 ${f1(LOO.a.w30)}), 피크 시간대 ±1시간 안 ${f1(LOO.a.h1)}. 예상 관객 수를 넣으면 범위 안 ${f1(LOO.b.cov)}, 오차 ${f1(LOO.b.medErr)}. 관객이 적은 행사일은 오차가 커요.</p>`)}
+  ${det('park','주차 구역별 참고(팀 분석)',`<p>주차장 혼잡도 정보(2025년 공연·행사일 71일)에서 P6·P5·P4가 오후 1시경 가장 먼저·자주(28~33일) 만차였고 P10·P1A는 12~17일이었어요. 구역 원자료는 다시 검증한 뒤 쓰고, 주차 분산 효과는 수치로 예측하지 않아요.</p>`)}
+  ${det('data','데이터 출처 · 관객 안내 주의점',`<ul><li>승차: 서울교통공사 역별 일별 시간대별 승하차인원(1~8호선)·9호선 2·3단계(환승 제외 순승차), 2025년</li>
+    <li>열차: 서울교통공사 열차운행시각표. 늦은 시간엔 짧게 가는 열차(군자행·삼전행 등)가 많고, 시각표는 바뀔 수 있어요</li>
+    <li>공연·주차: 한국체육산업개발 올림픽공원 공연·대관정보, 차량입출차·공연·날씨 연계 데이터, 주차장 혼잡도</li>
+    <li>도보 시간: 카카오맵 '큰길우선' 경로(2026-11-25 측정). 밤에는 불 밝은 큰길로 걸어요. 재지 않은 공연장은 KSPO DOME 값으로 어림해요</li>
+    <li>주변 장소: 위키백과 등으로 확인한 곳. 운영 시간은 방문 전 공식 안내를 확인하세요</li>
+    <li>지도는 약도예요(역·공연장 좌표는 위키백과, 올림픽홀은 도보 거리로 추정)</li>
+    <li>공연이 늦게 끝나면 길찾기의 출발 시각을 바꿔 보고, 현장에서는 역·공연장 안내를 먼저 따르세요</li></ul>`)}
+  <p class="hfoot">팀 크라우드제로(류시헌·임우징·석지혜)<br>2026년도 공공데이터 활용 경진대회 출품작 · <a href="https://github.com/woojingLim/curtaincall" target="_blank" rel="noopener">코드·데이터</a></p></div></div>`;
+  if(key){const el=document.getElementById('h-'+key);if(el){el.open=true;setTimeout(()=>el.scrollIntoView({block:'start'}),30)}}}
 function closeOv(){const ov=$('#ov');ov.hidden=true;ov.innerHTML=''}
 
 /* ---------- 렌더 ---------- */
@@ -317,7 +336,7 @@ $('#panel').addEventListener('click',e=>{const t=e.target;let b;
   if(b=t.closest('[data-poi]')){S.poiSel=S.poiSel===b.dataset.poi?null:b.dataset.poi;renderPanel();drawDyn();focusSel();return}
   if(b=t.closest('[data-gopoi]')){S.tab.aud='near';S.poiWhen='after';S.poiSel=b.dataset.gopoi;render();focusSel();return}
   if(b=t.closest('#playBtn')){S.playing?stopPlay():startPlay();return}
-  if(b=t.closest('[data-help]'))return openHelp();
+  if(b=t.closest('[data-help]'))return openHelp(b.dataset.help);
   if(b=t.closest('#printDay'))return printDay();
   if(b=t.closest('#printPlan'))return printPlan();
   if(b=t.closest('[data-pv]')){const sh=S.plan.shows[+b.dataset.pv];sh.on=!sh.on;renderPanel();drawDyn();return}
@@ -351,5 +370,5 @@ $('#zin').addEventListener('click',()=>zoomBtn(.7));$('#zout').addEventListener(
 window.addEventListener('resize',()=>{clearTimeout(window._rt);window._rt=setTimeout(focusSel,150)});
 
 /* ---------- 시작 ---------- */
-$('#zin').innerHTML=IC.plus;$('#zout').innerHTML=IC.minus;$('#zfit').innerHTML=IC.target;$('#helpBtn').innerHTML=IC.help;$('#helpBtn').addEventListener('click',openHelp);
+$('#zin').innerHTML=IC.plus;$('#zout').innerHTML=IC.minus;$('#zfit').innerHTML=IC.target;$('#helpBtn').innerHTML=IC.help;$('#helpBtn').addEventListener('click',()=>openHelp());
 setDay(location.hash.slice(1));initMap();render();setTimeout(focusSel,30);
