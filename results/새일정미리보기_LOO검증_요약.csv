@@ -1,0 +1,3 @@
+﻿예상 관객 수,days,within_range,median_abs_pct_error,within_30pct,peak_hour_exact,peak_hour_within_1h
+입력 안 함,144,78.5,18.9,67.4,54.9,96.5
+예상 관객 수 입력,144,79.2,17.4,71.5,56.9,94.4

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>커튼콜 이후 · 올림픽공원 공연 종료 혼잡 운영 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>/*CSS*/</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"><svg id="svg" aria-label="올림픽공원 주변 지도"></svg>
+    <div class="mapbtns" id="mapbtns"><button class="mbtn" id="zin" aria-label="확대"></button><button class="mbtn" id="zout" aria-label="축소"></button><button class="mbtn" id="zfit" aria-label="보던 곳으로"></button></div>
+    <div class="legendchip" id="legend"><b style="font-weight:700;color:#344054">2025 승차 기록</b><span><i style="background:#12A150"></i>적음</span><span><i style="background:#D99A00"></i>보통</span><span><i style="background:#F06A00"></i>많음</span><span><i style="background:#E5383B"></i>매우 많음</span></div>
+    <div class="mapnote" id="mapnote">약도 · 2025년 과거 기록 기반 · 실시간 정보 아님</div>
+  </div>
+  <header class="top"><button class="search" id="showBtn" aria-label="공연 고르기"></button><div class="seg" id="modeSeg" role="group" aria-label="보기 모드"><button data-m="ops">운영자</button><button data-m="aud">관객 안내</button></div></header>
+  <section class="sheet" id="sheet"><div class="grab" id="grab" role="button" aria-label="패널 크기 바꾸기"></div><nav class="tabs" id="tabs" role="tablist"></nav><div id="panel"></div></section>
+  <div class="ov" id="ov" hidden></div>
+</div>
+<div id="print" aria-hidden="true"></div>
+<script id="data">
+const D=/*D*/;
+const M=/*M*/;
+</script>
+<script id="model">
+/*MODEL*/
+</script>
+<script id="ui">
+/*JS*/
+</script>
+</body>
+</html>
