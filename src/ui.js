@@ -155,7 +155,13 @@ function vPark(){const d=S.day;const pk=parkPeak(d);if(!d.hrs.some(v=>v!=null))r
   <div class="card"><h4>시간대별 주차 차량${ib('read')}</h4>${bars({vals:d.hrs,base:D.base,H0:10,H1:23,hl:pk?.ph,color:'#2563EB',band:[startH(d),endH(d)],h:150})}
   <div class="leg"><span><i style="background:#2563EB"></i>주차 차량</span><span><i class="ln"></i>평일 평균</span><span><i style="background:#FFE2BF"></i>공연 시간</span></div></div>
   <div class="card"><h4>1시간 주차 순감소</h4><p class="cap">출차 − 입차 · 실제 출차 수 아님</p>${bars({vals:o.map((v,h)=>h>=10&&v!=null?Math.max(0,v):null),H0:10,H1:22,hl:pk?.ph,color:'#F06A00',h:140})}</div>
+  ${parkList()}
   <button class="srclink" data-help="park">주차 구역별 참고(팀 분석) 보기</button>`}
+const parkLv=f=>f==null?null:f>=28?3:f>=19?1:0;
+function parkList(){if(!M.park)return '';const rows=M.park.filter(p=>p.full!=null).sort((a,b)=>b.full-a.full);const mx=Math.max(...rows.map(r=>r.full));
+  return `<div class="card"><h4>주차장별 만차 기록</h4><p class="cap">2025년 공연·행사일 71일 중 만차가 기록된 날 · 지도에서 P를 눌러도 돼요</p>${rows.map(p=>{const lv=parkLv(p.full);
+    return `<button class="prow" data-park="${p.id}" aria-pressed="${S.parkSel===p.id}"><span class="pk" style="background:${LV[lv].c}">P</span><div class="grow"><div class="sn">${esc(p.n)} <small>${esc(p.near)}${p.cap?` · ${p.cap}대`:''}</small></div><div class="pbar"><span style="width:${p.full/mx*100}%;background:${LV[lv].c}"></span></div></div><div class="v2"><b>${p.full}일</b><small>보통 ${esc(p.first)}</small></div></button>`}).join('')}
+  <p class="small muted" style="margin-top:8px">위치: 올림픽공원 주차 안내 지도 기준(대략) · 주차 대수: 공원 안내 · 만차 기록: 한국체육산업개발 주차장 혼잡도 정보(붐비는 날 위주 기록이라 참고용). P1은 P1A·P1B 합계 562대.</p></div>`}
 function vSim(){const d=S.day,Sx=d.sub;if(!Sx)return `<p class="empty">이 공연일은 지하철 기록이 없어요.</p>`;const C=combOf(Sx),st=stagger(C,SBC,d,S.shift),{ph,mx}=peakOf(Sx,d),a=altScenario(Sx,d,S.alt);let h='';
   h+=`<div class="card"><h4>종료 시각 조정 · 가정 계산${ib('scen')}</h4>`;
   if(!st)h+=`<p class="empty" style="padding:14px 4px">종료 예정 간격 0분인 두 공연일(2025년 23일)만 계산해요. 공연 목록에서 '동시 종료 예정'을 골라 보세요.</p></div>`;
@@ -247,6 +253,8 @@ function drawDyn(){const sc=px(),d=S.day;let s=lineTags(sc);const vxy=VN[S.venue
       s+=`<g class="stn" data-stn="${g}"><circle cx="${x}" cy="${y}" r="${R}" fill="${lv==null?'#98A2B3':LV[lv].c}" fill-opacity=".28" stroke="${lv==null?'#98A2B3':LV[lv].c}" stroke-width="${2.5*sc}"/><circle cx="${x}" cy="${y}" r="${6*sc}" fill="${lv==null?'#98A2B3':LV[lv].c}" stroke="#fff" stroke-width="${2*sc}"/>`;
       const rt=r!=null?(r>=1?r.toFixed(1)+'배':Math.round(r*100)+'%'):'',t=innerWidth<600?`${GRP[g].n} ${rt}`:`${GRP[g].n} ${fmt(v)}명${rt?' · '+rt:''}`,fs=11.5*sc,w=t.length*fs*.86+fs*1.6,pos=LBL[g],off=R+8*sc;
       const cx=pos==='r'?x+off+w/2:pos==='l'?x-off-w/2:x,cy=pos==='t'?y-off-fs:pos==='b'?y+off+fs:y;s+=pill(cx,cy,t,sc,{fs:11.5})+`</g>`});
+    if(S.tab.ops==='park'&&M.park)M.park.forEach(p=>{const lv=parkLv(p.full),sel=p.id===S.parkSel,r=(sel?17:12+(p.cap?Math.sqrt(p.cap)*.25:0))*sc,[x,y]=p.xy,col=lv==null?'#98A2B3':LV[lv].c;
+      s+=`<g class="parkm" data-park="${p.id}"><rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" rx="${r*.35}" fill="${col}" stroke="${sel?'#111827':'#fff'}" stroke-width="${(sel?3.5:2.5)*sc}" filter="url(#shd)"/><text x="${x}" y="${y+r*.36}" text-anchor="middle" font-size="${r*1.05}" font-weight="800" fill="#fff">P</text>${sel||sc<2.2?`<text x="${x}" y="${y+r+14*sc}" text-anchor="middle" font-size="${11.5*sc}" font-weight="800" fill="#111827" stroke="#fff" stroke-width="${4*sc}" paint-order="stroke">${esc(p.n)}${p.full!=null&&sel?` · 만차 ${p.full}일`:''}</text>`:''}</g>`});
     venues(d).filter(v=>VN[v]).forEach(v=>{const [x,y]=VN[v];s+=`<circle cx="${x}" cy="${y}" r="${7*sc}" fill="#101828" stroke="#fff" stroke-width="${2.5*sc}"/>`+(innerWidth>=600||sc<2.2?`<text x="${x}" y="${y-12*sc}" text-anchor="middle" font-size="${11.5*sc}" font-weight="800" fill="#101828" stroke="#fff" stroke-width="${4*sc}" paint-order="stroke">${esc(shortV(v))}</text>`:'')})}
   elDyn.innerHTML=s}
 function stnMarker(g,c,sc,o){const [x,y]=ST[g],col=c?LV[c.lv].c:'#98A2B3',r=(o.sel?13:10)*sc,lns=GRP[g].k.map(k=>SK[k].ln);
@@ -345,6 +353,7 @@ $('#panel').addEventListener('click',e=>{const t=e.target;let b;
   if(b=t.closest('[data-pref]')){S.pref=b.dataset.pref;S.sel=null;renderPanel();drawDyn();focusSel();return}
   if(b=t.closest('[data-dep]')){S.depKey=b.dataset.dep;S.dep=+b.dataset.m;S.sel=null;render();return}
   if(b=t.closest('[data-opt]')){S.sel=S.sel===b.dataset.opt?null:b.dataset.opt;renderPanel();drawDyn();if(S.sel)focusSel();return}
+  if(b=t.closest('[data-park]')){S.parkSel=S.parkSel===b.dataset.park?null:b.dataset.park;renderPanel();drawDyn();const pk=M.park.find(x=>x.id===S.parkSel);if(pk)fitTo(bboxOf([pk.xy,VN['KSPO DOME']]),true,220);return}
   if(b=t.closest('[data-bus]')){S.busSel=S.busSel===b.dataset.bus?null:b.dataset.bus;renderPanel();drawDyn();const bs=M.bus.find(x=>x.id===S.busSel);if(bs){const vxy=VN[S.venue];fitTo(bboxOf([vxy||bs.xy,bs.xy]),true,200)}return}
   if(b=t.closest('[data-stn]')){S.stnSel=S.stnSel===b.dataset.stn?null:b.dataset.stn;drawDyn();if(S.stnSel){const vxy=VN[S.venue];fitTo(bboxOf([vxy||ST[S.stnSel],ST[S.stnSel]]),true,180)}return}
   if(b=t.closest('[data-when]')){S.poiWhen=b.dataset.when;S.poiSel=null;renderPanel();drawDyn();return}
@@ -372,6 +381,7 @@ function mapClick(el){if(!el)return;if(el.dataset.stn){if(S.mode==='ops'){S.tab.
     if(S.tab.aud!=='route'){S.tab.aud='route'}
     if(S.dest){const o=OPTS.find(x=>x.g===el.dataset.stn);if(o){S.sel=o.key;render();focusSel();setTimeout(()=>document.querySelector('.opt[aria-expanded=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50)}}
     else{S.stnSel=el.dataset.stn;render();focusSel()}return}
+  if(el.dataset.park){S.mode='ops';S.tab.ops='park';S.parkSel=el.dataset.park;render();setTimeout(()=>document.querySelector('[data-park][aria-pressed=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50);return}
   if(el.dataset.bus){S.tab.aud='route';S.busSel=el.dataset.bus;render();setTimeout(()=>document.querySelector('[data-bus][aria-pressed=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50);return}
   if(el.dataset.poi){S.poiSel=el.dataset.poi;renderPanel();drawDyn();setTimeout(()=>document.querySelector('.pc[aria-pressed=true]')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50)}}
 // 시트 끌기(모바일)

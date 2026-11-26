@@ -92,7 +92,7 @@ function fitTo(b,anim=true,pad=60){const R=visibleRect(),W=svg.clientWidth,H=svg
 const bboxOf=pts=>[Math.min(...pts.map(p=>p[0])),Math.min(...pts.map(p=>p[1])),Math.max(...pts.map(p=>p[0])),Math.max(...pts.map(p=>p[1]))];
 function fitDefault(anim=true){const b=bboxOf([...Object.values(ST),VN['KSPO DOME']]);fitTo([b[0]-190,b[1]-140,b[2]+330,b[3]+60],anim,60)}
 function bindPan(){const P=new Map();let last=null;
-  svg.addEventListener('pointerdown',e=>{downEl=e.target.closest('[data-stn],[data-poi],[data-v],[data-bus]');svg.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});last=null;svg.classList.add('drag');moved=0});
+  svg.addEventListener('pointerdown',e=>{downEl=e.target.closest('[data-stn],[data-poi],[data-v],[data-bus],[data-park]');svg.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});last=null;svg.classList.add('drag');moved=0});
   svg.addEventListener('pointermove',e=>{if(!P.has(e.pointerId))return;const p=P.get(e.pointerId),nx=e.clientX,ny=e.clientY;
     if(P.size===1){const s=px();V.x-=(nx-p.x)*s;V.y-=(ny-p.y)*s;moved+=Math.abs(nx-p.x)+Math.abs(ny-p.y);P.set(e.pointerId,{x:nx,y:ny});apply()}
     else if(P.size===2){P.set(e.pointerId,{x:nx,y:ny});const [a,b]=[...P.values()],dist=Math.hypot(a.x-b.x,a.y-b.y),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
