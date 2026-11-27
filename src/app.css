@@ -255,10 +255,10 @@ input[type=range]{width:100%;accent-color:var(--brand);height:28px}
 
 .fld{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:13px;font-weight:600}
 .fld input{border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13.5px;min-width:0;max-width:170px;background:#fff}
-.prow{display:grid;grid-template-columns:minmax(0,1fr) 100px 108px;gap:6px;align-items:center;margin-top:8px}
-.prow .chip{justify-content:center;overflow:hidden;text-overflow:ellipsis;padding:8px 6px;font-size:12.5px}
-.prow input,.prow select{border:1px solid var(--line);border-radius:10px;padding:7px 6px;font-size:13px;background:#fff;width:100%}
-.prow input:disabled,.prow select:disabled{opacity:.4}
+.planrow{display:grid;grid-template-columns:minmax(84px,1fr) 118px 112px;gap:6px;align-items:center;margin-top:8px}
+.planrow .chip{justify-content:center;overflow:hidden;text-overflow:ellipsis;padding:8px 6px;font-size:12.5px}
+.planrow input,.planrow select{border:1px solid var(--line);border-radius:10px;padding:7px 6px;font-size:13px;background:#fff;width:100%}
+.planrow input:disabled,.planrow select:disabled{opacity:.4}
 ul.chk{list-style:none;margin-top:8px}
 ul.chk li{position:relative;padding:8px 0 8px 22px;font-size:13px;line-height:1.5;color:var(--sub);border-top:1px solid var(--line)}
 ul.chk li:first-child{border-top:0}
@@ -346,3 +346,28 @@ ul.chk b{color:var(--ink)}
 .prow .sn{font-size:14px;font-weight:700}.prow .sn small{font-weight:500;color:var(--muted);font-size:11.5px;margin-left:4px}
 .pbar{height:6px;background:var(--soft);border-radius:4px;margin-top:5px;overflow:hidden}.pbar span{display:block;height:100%;border-radius:4px}
 .prow .v2{text-align:right;font-size:13px}.prow .v2 small{display:block;color:var(--muted);font-size:11px}
+
+/* 탭이 많을 때(운영자 6개): 한 줄에 다 들어가게 아이콘 위, 글자 아래 */
+.tabs.many{gap:0;padding-left:6px;padding-right:6px}
+.tabs.many button{flex:1 1 0;min-width:0;flex-direction:column;gap:3px;padding:7px 2px 8px;font-size:12px;letter-spacing:-.3px}
+.tabs.many button svg{width:18px;height:18px}
+/* 공연 정보 카드 */
+.shows h3{margin-bottom:8px}
+.showc{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.showc:first-of-type{border-top:0;padding-top:2px}
+.poster,.pbig,.dthumb{position:relative;flex:none;overflow:hidden;border-radius:10px;background:linear-gradient(160deg,#DCE6FB,#F1E8FB)}
+.poster{width:64px;height:90px;box-shadow:0 2px 8px rgba(17,24,39,.15)}
+.poster .pph,.pbig .pph{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:6px;font-size:11px;font-weight:800;color:#3B4A6B;line-height:1.25;word-break:keep-all}
+.pbig .pph small{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}
+.poster img,.pbig img,.dthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sinfo{min-width:0;display:flex;flex-direction:column;gap:3px}
+.sinfo b{font-size:14.5px;line-height:1.35;word-break:keep-all}
+.sinfo small{font-size:12px;color:var(--sub)}
+.slinks{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.slinks a{font-size:12px;font-weight:700;color:var(--brand);background:var(--brandSoft);border-radius:999px;padding:5px 10px;text-decoration:none}
+.sicredit{font-size:11px;color:var(--muted);margin-top:6px}
+.pbox .pbig{width:min(260px,70vw);aspect-ratio:3/4.2;margin:4px auto 14px;box-shadow:0 6px 20px rgba(17,24,39,.18)}
+.pbox .pbig img{object-fit:contain;background:#111827}
+.pbox .sinfo{align-items:flex-start}
+.dthumb{width:34px;height:46px;border-radius:6px}
+.pbox .sinfo,.pbox .sicredit{padding:0 20px}.pbox .sicredit{padding-bottom:18px}.pbox .sinfo{padding-bottom:6px}

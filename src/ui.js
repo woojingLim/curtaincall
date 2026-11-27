@@ -48,6 +48,7 @@ const TABS={aud:[['route','길찾기','route'],['near','주변','spark'],['last'
 function renderTop(){const d=S.day,md=d.date.slice(5).replace('-','.');
   $('#showBtn').innerHTML=`<span class="ic">${IC.ticket}</span><span class="tx"><b>${esc(title(d))}</b><small>${md} (${d.wd}) · ${esc(venues(d).map(shortV).join(' · '))} · 추정 종료 ${d.end}</small></span><span class="chev">${IC.chev}</span>`;
   document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.mode));
+  $('#tabs').classList.toggle('many',TABS[S.mode].length>4);
   $('#tabs').innerHTML=TABS[S.mode].map(([id,t,ic])=>`<button role="tab" data-tab="${id}" aria-selected="${S.tab[S.mode]===id}">${IC[ic]}${t}</button>`).join('')}
 
 /* ---------- 관람객: 길찾기 ---------- */
@@ -98,7 +99,7 @@ function busList(){const rows=busNear();if(!rows.length)return '';
   <p class="small muted" style="margin-top:8px">버스는 승차 기록이 없어 혼잡도는 표시하지 않아요. 정류장: 서울시 버스정류소 위치정보 · 노선: 카카오맵 대조(2026-11).</p></div>`}
 function quickDests(){const ids=['jamsil','gangnam','cheonho','yeouido','gwanghwa','garak'];
   return `<div class="sec"><h3>${IC.pin}자주 가는 곳</h3><div class="chips">${ids.map(id=>{const t=M.DEST.find(x=>x.id===id);return `<button class="chip out" data-dest="${id}">${[...new Set(t.via.map(v=>v[0]))].map(lb).join('')} ${esc(t.n)}</button>`}).join('')}</div></div>`}
-function vRoute(){computeOptions();let h=`<p class="banner">${IC.clock}<span>2025년 같은 공연일 기록과 열차 시각표로 만든 미리보기예요. 실시간 정보가 아니에요.</span></p>`+tripBox();
+function vRoute(){computeOptions();let h=`<p class="banner">${IC.clock}<span>2025년 같은 공연일 기록과 열차 시각표로 만든 미리보기예요. 실시간 정보가 아니에요.</span></p>`+showCards(S.day)+tripBox();
   if(!S.day.sub)h+=`<p class="empty">이 공연일은 지하철 승차 기록이 없어요. 다른 공연일을 골라 보세요.</p>`;
   if(!S.dest)return h+quickDests()+stationList()+busList()+srcNote();
   h+=`<div class="row" style="margin:4px 2px 10px;gap:6px"><span class="small muted">추천 기준</span><button class="chip" data-pref="calm" aria-pressed="${S.pref==='calm'}">덜 붐비게</button><button class="chip" data-pref="fast" aria-pressed="${S.pref==='fast'}">빨리</button></div>`;
@@ -127,8 +128,27 @@ function vLast(){const d=S.day,dt=dayType(d);let h=`<p class="small muted" style
 function opsHour(){if(S.hour==null){S.hour=S.day.sub?peakOf(S.day.sub,S.day).ph:Math.min(23,Math.floor(endH(S.day)))}return S.hour}
 function grpVal(d,g,h){if(!d.sub)return null;const ks=GRP[g].k;if(ks.some(k=>d.sub[k]?.[h]==null))return null;return ks.reduce((a,k)=>a+d.sub[k][h],0)}
 let SUM=null;const pct=(a,b)=>((1-a/b)*100).toFixed(1)+'%';
+/* ---------- 공연 정보 카드(포스터·예매처) ----------
+   SI = src/shows_info.json (fetch_kopis.py로 KOPIS에서 받아 만들어요). 없으면 검색 링크만 보여 줘요. */
+const siOf=s=>(typeof SI!=='undefined'&&SI[s.t])||null;
+const naverQ=s=>'https://search.naver.com/search.naver?query='+encodeURIComponent(s.t);
+function posterBtn(s,i,cls='poster'){const si=siOf(s);
+  return `<button class="${cls}" data-poster="${i}" aria-label="${esc(s.t)} 포스터 크게 보기"><span class="pph">${esc(shortV(s.v))}</span>${si?.poster?`<img class="pimg" src="${esc(si.poster)}" alt="" loading="lazy">`:''}</button>`}
+function showLinks(s){const si=siOf(s),ls=(si?.links||[]).slice(0,3);
+  return `<div class="slinks">${ls.map(l=>`<a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.n)}</a>`).join('')}<a href="${naverQ(s)}" target="_blank" rel="noopener">${ls.length?'더 찾아보기':'공연 정보 찾아보기'}</a></div>`}
+function showCards(d){const hasSI=d.shows.some(siOf);
+  return `<div class="sec shows"><h3>${IC.ticket}이 날 공연</h3>${d.shows.map((s,i)=>{const si=siOf(s);
+    return `<div class="showc">${posterBtn(s,i)}<div class="sinfo"><b>${esc(s.t)}</b><small>${esc(shortV(s.v))} · ${s.s?s.s+' 시작':'시작 시각 미상'} · ${esc(si?.genre||s.k)}</small>${si?.period?`<small>공연 기간 ${esc(si.period)}</small>`:''}${showLinks(s)}</div></div>`}).join('')}
+  ${hasSI?'<p class="sicredit">포스터·예매처 정보: KOPIS 공연예술통합전산망</p>':''}</div>`}
+function openPoster(i){const s=S.day.shows[i];if(!s)return;const si=siOf(s),ov=$('#ov');ov.hidden=false;
+  ov.innerHTML=`<div class="ovbox pbox" role="dialog" aria-label="공연 정보"><div class="ovhd"><h2>공연 정보</h2><button class="x" data-close aria-label="닫기">${IC.x}</button></div>
+  <div class="pbig">${si?.poster?`<img class="pimg" src="${esc(si.poster)}" alt="${esc(s.t)} 포스터">`:`<span class="pph">${esc(shortV(s.v))}<small>포스터 없음</small></span>`}</div>
+  <div class="sinfo"><b>${esc(s.t)}</b><small>${S.day.date.replace(/-/g,'.')} (${S.day.wd}) · ${esc(shortV(s.v))} · ${s.s?s.s+' 시작':'시작 시각 미상'}</small>${si?.period?`<small>공연 기간 ${esc(si.period)} · ${esc(si.genre||s.k)}</small>`:''}${showLinks(s)}</div>
+  ${si?'<p class="sicredit">포스터·예매처 정보: KOPIS 공연예술통합전산망</p>':''}</div>`}
+// 포스터를 못 불러오면 이미지만 치우고 이름표(공연장)를 보여 줘요
+document.addEventListener('error',e=>{if(e.target.classList?.contains('pimg'))e.target.remove()},true);
 function vSum(){SUM=SUM||summary();const s=SUM;
-  return `<div class="ident"><b>운영 의사결정 시뮬레이터</b><p>공연이 끝난 뒤 혼잡을 줄일 대안을 2025년 기록으로 미리 비교해요. 실시간 정보가 아니에요.</p><button class="hbtn" data-help>${IC.help}사용법 보기</button></div>
+  return showCards(S.day)+`<div class="ident"><b>운영 의사결정 시뮬레이터</b><p>공연이 끝난 뒤 혼잡을 줄일 대안을 2025년 기록으로 미리 비교해요. 실시간 정보가 아니에요.</p><button class="hbtn" data-help>${IC.help}사용법 보기</button></div>
   <div class="sec"><h3>${IC.chart}관측 · 2025년 기록${ib('read')}</h3><div class="tiles">
     <div class="tile"><b>${s.days}일</b><small>분석 공연일</small></div>
     <div class="tile hot"><b>${fmt(s.peak)}명</b><small>올림픽공원역 피크 1시간</small></div>
@@ -187,7 +207,7 @@ function vPlan(){const P=S.plan,pq=planQuery();LOO=LOO||{a:looCheck(false),b:loo
   let h=`<p class="banner">${IC.clock}<span>2025년 비슷한 공연일로 보는 참고 범위예요. 예측·실시간 정보가 아니에요.</span></p>
   <div class="card"><h4>새 공연 일정</h4>
   <div class="fld"><span>날짜</span><input type="date" id="planDate" value="${P.date}"></div>
-  ${P.shows.map((s,i)=>`<div class="prow"><button class="chip" data-pv="${i}" aria-pressed="${s.on}">${esc(s.v==='티켓링크 라이브 아레나(핸드볼경기장)'?'티켓링크':shortV(s.v))}</button><input type="time" data-ps="${i}" value="${s.s}" min="10:00" max="21:30" step="900" aria-label="${esc(shortV(s.v))} 시작 시각" ${s.on?'':'disabled'}><select data-pt="${i}" aria-label="${esc(shortV(s.v))} 공연 유형" ${s.on?'':'disabled'}>${Object.keys(RUNTIME).map(t=>`<option ${t===s.t?'selected':''}>${t}</option>`).join('')}</select></div>`).join('')}
+  ${P.shows.map((s,i)=>`<div class="planrow"><button class="chip" data-pv="${i}" aria-pressed="${s.on}">${esc(s.v==='티켓링크 라이브 아레나(핸드볼경기장)'?'티켓링크':shortV(s.v))}</button><input type="time" data-ps="${i}" value="${s.s}" min="10:00" max="21:30" step="900" aria-label="${esc(shortV(s.v))} 시작 시각" ${s.on?'':'disabled'}><select data-pt="${i}" aria-label="${esc(shortV(s.v))} 공연 유형" ${s.on?'':'disabled'}>${Object.keys(RUNTIME).map(t=>`<option ${t===s.t?'selected':''}>${t}</option>`).join('')}</select></div>`).join('')}
   <div class="fld"><span>예상 관객 수 <small class="muted">(선택)</small></span><input type="number" id="planAud" min="0" step="500" value="${P.aud}" placeholder="예: 15000"></div></div>`;
   if(!pq)return h+`<p class="empty">공연장을 하나 이상 골라 주세요.</p>`;
   const r=similarCases(pq.q,7),q=pq.q;SIMQ=r;
@@ -277,7 +297,7 @@ function openShows(){const ov=$('#ov');ov.hidden=false;
   <div class="ovlist" id="dl"></div></div>`;
   let vf='';const draw=()=>{const f=$('#q').value.trim().toLowerCase();let m='',h='';
     D.days.filter(d=>(!f||d.date.includes(f)||title(d).toLowerCase().includes(f))&&(!vf||(vf==='multi'?d.gap===0:venues(d).includes(vf)))).forEach(d=>{const mm=+d.date.slice(5,7);if(mm!==m){m=mm;h+=`<div class="mon">${mm}월</div>`}
-      h+=`<button class="dayrow" data-day="${d.id}" aria-current="${d.id===S.day.id}"><span class="dbox"><b>${+d.date.slice(8)}</b><small>${d.wd}</small></span><span class="dt"><b>${esc(title(d))}</b><small>${esc(venues(d).map(shortV).join(' · '))} · 추정 종료 ${d.end}</small></span>${d.n>1?`<span class="pill2">${d.gap===0?'동시 종료 예정':d.n+'개 공연'}</span>`:''}</button>`});
+      h+=`<button class="dayrow" data-day="${d.id}" aria-current="${d.id===S.day.id}"><span class="dbox"><b>${+d.date.slice(8)}</b><small>${d.wd}</small></span>${(()=>{const s=d.shows.find(x=>siOf(x)?.poster);return s?`<span class="dthumb"><img class="pimg" src="${esc(siOf(s).poster)}" alt="" loading="lazy"></span>`:''})()}<span class="dt"><b>${esc(title(d))}</b><small>${esc(venues(d).map(shortV).join(' · '))} · 추정 종료 ${d.end}</small></span>${d.n>1?`<span class="pill2">${d.gap===0?'동시 종료 예정':d.n+'개 공연'}</span>`:''}</button>`});
     $('#dl').innerHTML=h||'<p class="empty">찾는 공연이 없어요.</p>'};
   draw();$('#q').addEventListener('input',draw);
   $('#vf').addEventListener('click',e=>{const b=e.target.closest('[data-vf]');if(!b)return;vf=b.dataset.vf;document.querySelectorAll('#vf .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()});
@@ -348,6 +368,7 @@ $('#ov').addEventListener('click',e=>{if(e.target.id==='ov'||e.target.closest('[
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#ov').hidden)closeOv()});
 $('#panel').addEventListener('click',e=>{const t=e.target;let b;
   if(b=t.closest('#destBtn'))return openDests();
+  if(b=t.closest('[data-poster]'))return openPoster(+b.dataset.poster);
   if(b=t.closest('[data-dest]')){S.dest=M.DEST.find(x=>x.id===b.dataset.dest);S.sel=null;render();$('#panel').scrollTop=0;return focusSel()}
   if(b=t.closest('[data-venue]')){S.venue=b.dataset.venue;S.sel=null;S.busSel=null;render();return focusSel()}
   if(b=t.closest('[data-pref]')){S.pref=b.dataset.pref;S.sel=null;renderPanel();drawDyn();focusSel();return}
