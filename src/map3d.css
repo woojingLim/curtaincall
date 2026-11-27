@@ -1,0 +1,57 @@
+/* ===== 3D 지도 ===== */
+#gl{position:absolute;inset:0;display:none}
+#map.gl #gl{display:block}#map.gl #svg,#map.gl .fog{display:none}
+#gpsBtn{display:none}#map.gl #gpsBtn{display:grid}
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-geolocate{display:none}
+.maplibregl-ctrl-bottom-right{bottom:calc(46vh + 6px)}
+@media (min-width:960px){.maplibregl-ctrl-bottom-right{bottom:6px}}
+.mbtn{backdrop-filter:blur(8px);background:rgba(255,255,255,.94)}
+
+.m3{cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.m3 b{font-size:12.5px;font-weight:800;color:#111827;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff}
+.m3.stn{position:relative;width:20px;height:20px;justify-content:center}
+.m3.stn .dot{width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid var(--c);box-shadow:0 2px 6px rgba(17,24,39,.3)}
+.m3.stn .dot.sel{width:22px;height:22px;background:var(--c);border-color:#fff}
+.m3.stn .halo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:color-mix(in srgb,var(--c) 26%,transparent);border:2px solid var(--c);pointer-events:none}
+.m3.stn .lab{position:absolute;left:22px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;background:#fff;border-radius:999px;padding:4px 9px 4px 5px;box-shadow:0 2px 8px rgba(17,24,39,.18)}
+.m3.stn.crowd .lab{left:auto;right:auto;top:auto;transform:none;position:absolute;bottom:calc(100% + 6px);left:50%;translate:-50% 0}
+.m3.stn .lab i{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;color:#fff;font-style:normal;font-size:10px;font-weight:800}
+.m3.stn .lab b{text-shadow:none;font-size:12.5px}.m3.stn .lab small{font-size:11px;color:var(--sub);font-weight:600}
+.m3.stn .lab em{font-style:normal;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 6px}
+.m3.stn.on .lab{outline:2px solid var(--brand)}
+.m3.dim{opacity:.45}
+.m3.venue{flex-direction:column;gap:2px}
+.m3.venue .pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#111827;border:3px solid #fff;box-shadow:0 3px 8px rgba(17,24,39,.35)}
+.m3.venue.small .vd{width:12px;height:12px;border-radius:50%;background:#111827;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(17,24,39,.3)}
+.walkpill{display:inline-flex;align-items:center;gap:4px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800;padding:5px 10px;border-radius:999px;box-shadow:0 3px 10px rgba(31,91,216,.35)}
+.walkpill svg{width:14px;height:14px}
+.bsq{display:grid;place-items:center;width:16px;height:16px;border-radius:4px;background:#475467;color:#fff;font-size:10px;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(17,24,39,.3)}
+.bsq.sel{width:24px;height:24px;font-size:12px;background:var(--brand)}
+.psq{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;color:#fff;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 2px 6px rgba(17,24,39,.3)}
+.m3.park:not(.on) b{font-size:11px}
+.m3.park.on .psq{width:30px;height:30px;font-size:15px;outline:3px solid #111827}
+.pc3{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(17,24,39,.3);color:#fff}
+.pc3 svg{width:14px;height:14px}
+.m3.on{z-index:5}
+/* 패널·상단 조금 더 다듬기 */
+.sheet{border-radius:20px 20px 0 0}
+@media (min-width:960px){.sheet{border-radius:18px}}
+.search,.seg{backdrop-filter:blur(10px);background:rgba(255,255,255,.95)}
+.legendchip,.mapnote{backdrop-filter:blur(8px)}
+
+/* 멀리서 볼 때는 작은 표시 줄이기 */
+#gl.far .m3.bus:not(.on),#gl.far .m3.park:not(.on) b{display:none}
+#gl.far .m3.stn .lab small{display:none}
+@media (max-width:959px){.m3.stn .lab{padding:3px 8px 3px 4px}.m3.stn .lab b{font-size:11.5px}.m3.stn .lab small{display:none}}
+
+/* 지도 방향(나침반·슬라이더) */
+#compassBtn{display:none}#map.gl #compassBtn{display:grid}
+#compassBtn .needle{width:24px;height:24px;transition:transform .08s linear}
+#compassBtn.turned{outline:2px solid var(--brand);outline-offset:-2px}
+.bearpop{position:absolute;z-index:6;transform:translateY(-50%);display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);box-shadow:var(--sh);border-radius:14px;padding:8px 10px 8px 14px;width:min(360px,calc(100vw - 92px))}
+.bearpop[hidden]{display:none}
+.bearpop .bt{font-size:12.5px;font-weight:800;color:var(--sub);flex:none}
+.bearpop input{flex:1;min-width:0;accent-color:var(--brand);height:28px}
+.bearpop b{flex:none;width:76px;font-size:12px;font-weight:700;color:var(--ink);text-align:center;font-variant-numeric:tabular-nums}
+.bearpop button{flex:none;font-size:12px;font-weight:700;color:var(--brand);background:var(--brandSoft);border-radius:999px;padding:6px 10px}
+@media (max-width:599px){.bearpop{flex-wrap:wrap;gap:6px 8px}.bearpop input{flex-basis:100%;order:3}.bearpop b{width:auto;flex:1;text-align:left}}

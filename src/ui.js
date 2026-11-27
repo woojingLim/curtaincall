@@ -256,7 +256,7 @@ function drawDyn(){const sc=px(),d=S.day;let s=lineTags(sc);const vxy=VN[S.venue
     if(S.tab.ops==='park'&&M.park)M.park.forEach(p=>{const lv=parkLv(p.full),sel=p.id===S.parkSel,r=(sel?17:12+(p.cap?Math.sqrt(p.cap)*.25:0))*sc,[x,y]=p.xy,col=lv==null?'#98A2B3':LV[lv].c;
       s+=`<g class="parkm" data-park="${p.id}"><rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" rx="${r*.35}" fill="${col}" stroke="${sel?'#111827':'#fff'}" stroke-width="${(sel?3.5:2.5)*sc}" filter="url(#shd)"/><text x="${x}" y="${y+r*.36}" text-anchor="middle" font-size="${r*1.05}" font-weight="800" fill="#fff">P</text>${sel||sc<2.2?`<text x="${x}" y="${y+r+14*sc}" text-anchor="middle" font-size="${11.5*sc}" font-weight="800" fill="#111827" stroke="#fff" stroke-width="${4*sc}" paint-order="stroke">${esc(p.n)}${p.full!=null&&sel?` · 만차 ${p.full}일`:''}</text>`:''}</g>`});
     venues(d).filter(v=>VN[v]).forEach(v=>{const [x,y]=VN[v];s+=`<circle cx="${x}" cy="${y}" r="${7*sc}" fill="#101828" stroke="#fff" stroke-width="${2.5*sc}"/>`+(innerWidth>=600||sc<2.2?`<text x="${x}" y="${y-12*sc}" text-anchor="middle" font-size="${11.5*sc}" font-weight="800" fill="#101828" stroke="#fff" stroke-width="${4*sc}" paint-order="stroke">${esc(shortV(v))}</text>`:'')})}
-  elDyn.innerHTML=s}
+  elDyn.innerHTML=s;if(TILT.th>0)billboard()}
 function stnMarker(g,c,sc,o){const [x,y]=ST[g],col=c?LV[c.lv].c:'#98A2B3',r=(o.sel?13:10)*sc,lns=GRP[g].k.map(k=>SK[k].ln);
   const name=GRP[g].n,fs=12.5*sc,lw=(name.length*fs*.98)+(lns.length*16*sc)+fs*1.8,lh=fs*2.1,pos=LBL[g];
   let lx=x+r+8*sc,ly=y-lh/2;if(pos==='l')lx=x-r-8*sc-lw;if(pos==='b'){lx=x-lw/2+40*sc;ly=y+r+6*sc}if(pos==='t'){lx=x-lw/2;ly=y-r-6*sc-lh}
@@ -392,8 +392,8 @@ function mapClick(el){if(!el)return;if(el.dataset.stn){if(S.mode==='ops'){S.tab.
   gb.addEventListener('pointermove',e=>{if(y0==null)return;const dy=e.clientY-y0;moved2=Math.abs(dy);sh.style.height=Math.max(120,Math.min(innerHeight-70,h0-dy))+'px'});
   gb.addEventListener('pointerup',e=>{if(y0==null)return;sh.classList.remove('nodrag');const h=sh.getBoundingClientRect().height;sh.style.height='';y0=null;
     if(moved2>6){setState(h<innerHeight*.3?'min':h>innerHeight*.66?'max':'mid');setTimeout(focusSel,300)}})})();
-$('#zin').addEventListener('click',()=>zoomBtn(.7));$('#zout').addEventListener('click',()=>zoomBtn(1.4));$('#zfit').addEventListener('click',focusSel);
-window.addEventListener('resize',()=>{clearTimeout(window._rt);window._rt=setTimeout(focusSel,150)});
+$('#zin').addEventListener('click',()=>zoomBtn(.7));$('#zout').addEventListener('click',()=>zoomBtn(1.4));$('#zfit').addEventListener('click',focusSel);$('#tiltBtn').addEventListener('click',()=>toggleTilt());
+window.addEventListener('resize',()=>{clearTimeout(window._rt);window._rt=setTimeout(()=>{relayoutTilt();focusSel()},150)});
 
 /* ---------- 시작 ---------- */
 $('#zin').innerHTML=IC.plus;$('#zout').innerHTML=IC.minus;$('#zfit').innerHTML=IC.target;$('#helpBtn').innerHTML=IC.help;$('#helpBtn').addEventListener('click',()=>openHelp());

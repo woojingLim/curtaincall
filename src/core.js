@@ -63,8 +63,8 @@ function baseLayer(){
   s+=`<text x="1690" y="2260" font-size="34" fill="#98A2B3" font-weight="600" transform="rotate(-62 1690 2260)">양재대로</text>`;
   // 공원
   s+=`<path d="${smooth(PARK)}" fill="#CFE6C3" stroke="#B8D9A8" stroke-width="10"/>`;
-  s+=`<ellipse cx="${M.fort[0]}" cy="${M.fort[1]+20}" rx="300" ry="190" fill="#BEDDAE"/><text x="${M.fort[0]}" y="${M.fort[1]-70}" text-anchor="middle" font-size="34" fill="#5E8A4C" font-weight="600">몽촌토성</text>`;
-  s+=`<text x="1150" y="1150" text-anchor="middle" font-size="44" fill="#6E9A5B" font-weight="700" letter-spacing="4">올림픽공원</text>`;
+  s+=`<ellipse cx="${M.fort[0]}" cy="${M.fort[1]+20}" rx="300" ry="190" fill="#BEDDAE"/><text x="${M.fort[0]}" y="${M.fort[1]-70}" text-anchor="middle" class="bb" font-size="34" fill="#5E8A4C" font-weight="600">몽촌토성</text>`;
+  s+=`<text x="1150" y="1150" class="bb" text-anchor="middle" font-size="44" fill="#6E9A5B" font-weight="700" letter-spacing="4">올림픽공원</text>`;
   // 공연장 건물
   const K=VN['KSPO DOME'],T=VN['티켓링크 라이브 아레나(핸드볼경기장)'],H=VN['올림픽홀'];
   s+=`<g fill="#F4F7F1" stroke="#B9CDAE" stroke-width="5"><circle cx="${K[0]}" cy="${K[1]}" r="62"/><rect x="${T[0]-50}" y="${T[1]-34}" width="100" height="68" rx="14"/><rect x="${H[0]-46}" y="${H[1]-30}" width="92" height="60" rx="12"/></g>`;
@@ -77,6 +77,48 @@ function ends(scale){let s='';LINESHAPE.forEach(L=>L.ends.forEach(([x,y,t])=>{co
   s+=`<g transform="translate(${x} ${y})"><rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${h/2}" fill="#fff" stroke="${L.c}" stroke-width="${1.5*scale}"/><circle cx="${-w/2+h/2}" cy="0" r="${fs*.42}" fill="${L.c}"/><text x="${fs*.55}" y="${fs*.36}" text-anchor="middle" font-size="${fs}" fill="#344054" font-weight="600">${t}</text></g>`}));return s}
 const elBase=document.createElementNS(NS,'g'),elDyn=document.createElementNS(NS,'g');
 function initMap(){elBase.innerHTML=baseLayer();svg.append(elBase,elDyn);fitDefault(false);bindPan()}
+/* ---------- 3D 보기(45도 기울기) ----------
+   바닥(지도)은 CSS perspective+rotateX로 눕히고, 마커·글자는 세로로 1/cos만큼 늘려 똑바로 서 보이게 해요.
+   화면 좌표 ↔ 지도(SVG 로컬) 좌표는 아래 toLocal로 정확히 바꿔요. 2D일 때는 예전과 똑같이 동작해요. */
+const mapEl=$('#map');
+const TILT={on:false,th:0,max:45,lay:null,raf:0};
+const rad=d=>d*Math.PI/180;
+function toLocal(sx,sy){const L=TILT.lay;if(!L)return {x:sx,y:sy};const c=Math.cos(rad(TILT.th)),s=Math.sin(rad(TILT.th)),p=L.p,X=sx-L.fx,Y=sy-L.fy;
+  const y=Y*p/(c*p+Y*s),x=X*(p-y*s)/p;return {x:L.ox+x,y:L.oy+y}}
+const cl2loc=(cx,cy)=>{const r=mapEl.getBoundingClientRect();return toLocal(cx-r.left,cy-r.top)};
+function tiltCSS(){const L=TILT.lay;svg.style.transform=L&&TILT.th>0.01?`perspective(${L.p}px) rotateX(${TILT.th}deg)`:''}
+function setLayout(L){ // 화면에 보이는 그림은 그대로 두고(기울기 0일 때) SVG 크기만 바꿔요
+  const s=px(),o=TILT.lay||{l:0,t:0};
+  if(L){Object.assign(svg.style,{left:L.l+'px',top:L.t+'px',width:L.w+'px',height:L.h+'px',transformOrigin:`${L.ox}px ${L.oy}px`})}
+  else{['left','top','width','height','transformOrigin','transform'].forEach(k=>svg.style[k]='')}
+  const n=L||{l:0,t:0};V.x+=(n.l-o.l)*s;V.y+=(n.t-o.t)*s;V.w=svg.clientWidth*s;V.h=svg.clientHeight*s;TILT.lay=L;apply()}
+function calcLayout(){const W=mapEl.clientWidth,H=mapEl.clientHeight,R=visibleRect(),fx=(R.l+R.r)/2,fy=(R.t+R.b)/2;
+  const c=Math.cos(rad(TILT.max)),s=Math.sin(rad(TILT.max)),p=Math.max(1.5*H,1.1*W*.6,900),dt=fy+40,db=H-fy+40;
+  const up=dt*p/(c*p-s*dt),dn=db*p/(c*p+s*db),half=(Math.max(fx,W-fx)+40)*(p+up*s)/p;
+  return {p,fx,fy,ox:half,oy:up,w:2*half,h:up+dn,l:fx-half,t:fy-up}}
+function toggleTilt(force){const on=force??!TILT.on;if(on===TILT.on)return;TILT.on=on;
+  const b=$('#tiltBtn');if(b){b.setAttribute('aria-pressed',on);b.textContent=on?'3D':'2D';b.setAttribute('aria-label',on?'2D로 보기':'3D로 보기')}
+  mapEl.classList.toggle('is3d',on);
+  if(on&&!TILT.lay)setLayout(calcLayout());
+  const a=TILT.th,to=on?TILT.max:0,t0=performance.now(),dur=480;cancelAnimationFrame(TILT.raf);
+  const step=t=>{const k=Math.min(1,(t-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;TILT.th=a+(to-a)*e;tiltCSS();billboard();
+    if(k<1)TILT.raf=requestAnimationFrame(step);else{if(!on){TILT.th=0;setLayout(null)}drawDyn();if(typeof focusSel==='function')focusSel()}};
+  TILT.raf=requestAnimationFrame(step)}
+function relayoutTilt(){if(!TILT.on)return;const th=TILT.th;TILT.th=0;tiltCSS();setLayout(null);setLayout(calcLayout());TILT.th=th;tiltCSS();billboard()}
+// 마커·글자 세우기: 기준점(마커 중심, 핀 끝, 글자 위치)을 중심으로 세로로 1/cos(기울기)만큼 늘려요
+function bbAnchor(el){if(el.dataset.ba)return el.dataset.ba.split(',').map(Number);
+  const tr=el.getAttribute('transform')||'',m=/^translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/.exec(tr);let a;
+  if(el.dataset.v&&VN[el.dataset.v])a=VN[el.dataset.v];
+  else if(m)a=[+m[1],+m[2]];
+  else if(el.tagName==='circle'||el.tagName==='text')a=el.tagName==='circle'?[+el.getAttribute('cx'),+el.getAttribute('cy')]:[+el.getAttribute('x'),+el.getAttribute('y')];
+  else{const c=el.querySelector(':scope>circle'),r=el.querySelector(':scope>rect');
+    if(c)a=[+c.getAttribute('cx'),+c.getAttribute('cy')];else if(r)a=[+r.getAttribute('x')+r.getAttribute('width')/2,+r.getAttribute('y')+r.getAttribute('height')/2];
+    else{const b=el.getBBox();a=[b.x+b.width/2,b.y+b.height]}}
+  el.dataset.ba=a.join(',');el.dataset.bt=tr;return a}
+function billboard(){const k=1/Math.cos(rad(TILT.th));
+  [...elDyn.children,...elBase.querySelectorAll('.bb')].forEach(el=>{if(el.tagName==='path'||el.tagName==='defs')return;
+    if(k<1.0005){if(el.dataset.ba!=null){el.dataset.bt?el.setAttribute('transform',el.dataset.bt):el.removeAttribute('transform')}return}
+    const [x,y]=bbAnchor(el);el.setAttribute('transform',`translate(${x} ${y}) scale(1 ${k}) translate(${-x} ${-y}) ${el.dataset.bt}`.trim())})}
 const px=()=>V.w/svg.clientWidth;   // 화면 1px = 지도 몇 m
 function setView(v,anim){const aspect=svg.clientHeight/svg.clientWidth||1;v.h=v.w*aspect;
   if(anim){const a={...V},t0=performance.now(),dur=320;const step=t=>{const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);V={x:a.x+(v.x-a.x)*e,y:a.y+(v.y-a.y)*e,w:a.w+(v.w-a.w)*e,h:a.h+(v.h-a.h)*e};apply();if(k<1)requestAnimationFrame(step);else drawDyn()};requestAnimationFrame(step)}
@@ -85,7 +127,9 @@ function apply(){svg.setAttribute('viewBox',`${V.x} ${V.y} ${V.w} ${V.h}`)}
 function visibleRect(){const W=svg.clientWidth,H=svg.clientHeight;const sh=$('#sheet');
   if(innerWidth>=960)return {l:464,t:24,r:W-70,b:H-24};
   const top=74,bot=H-(sh?sh.getBoundingClientRect().height:0)-8;return {l:12,t:top,r:W-64,b:Math.max(top+80,bot)}}
-function fitTo(b,anim=true,pad=60){const R=visibleRect(),W=svg.clientWidth,H=svg.clientHeight;
+function localRect(R){if(!TILT.lay)return R;const a=toLocal(R.l,R.t),b=toLocal(R.r,R.t),c=toLocal(R.l,R.b),d=toLocal(R.r,R.b);
+  return {l:Math.max(a.x,c.x),r:Math.min(b.x,d.x),t:Math.max(a.y,b.y),b:Math.min(c.y,d.y)}}
+function fitTo(b,anim=true,pad=60){const R=localRect(visibleRect()),W=svg.clientWidth,H=svg.clientHeight;
   const bw=b[2]-b[0]+pad*2,bh=b[3]-b[1]+pad*2,sx=bw/(R.r-R.l),sy=bh/(R.b-R.t),s=Math.max(sx,sy,innerWidth>=960?2.3:1.7);
   const cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2,vw=W*s,vh=H*s;
   const x=cx-((R.l+R.r)/2)*s,y=cy-((R.t+R.b)/2)*s;setView({x,y,w:vw,h:vh},anim)}
@@ -94,17 +138,17 @@ function fitDefault(anim=true){const b=bboxOf([...Object.values(ST),VN['KSPO DOM
 function bindPan(){const P=new Map();let last=null;
   svg.addEventListener('pointerdown',e=>{downEl=e.target.closest('[data-stn],[data-poi],[data-v],[data-bus],[data-park]');svg.setPointerCapture(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});last=null;svg.classList.add('drag');moved=0});
   svg.addEventListener('pointermove',e=>{if(!P.has(e.pointerId))return;const p=P.get(e.pointerId),nx=e.clientX,ny=e.clientY;
-    if(P.size===1){const s=px();V.x-=(nx-p.x)*s;V.y-=(ny-p.y)*s;moved+=Math.abs(nx-p.x)+Math.abs(ny-p.y);P.set(e.pointerId,{x:nx,y:ny});apply()}
+    if(P.size===1){const s=px(),a=cl2loc(p.x,p.y),q=cl2loc(nx,ny);V.x-=(q.x-a.x)*s;V.y-=(q.y-a.y)*s;moved+=Math.abs(nx-p.x)+Math.abs(ny-p.y);P.set(e.pointerId,{x:nx,y:ny});apply()}
     else if(P.size===2){P.set(e.pointerId,{x:nx,y:ny});const [a,b]=[...P.values()],dist=Math.hypot(a.x-b.x,a.y-b.y),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-      if(last){zoomAt(mid,last.dist/dist,false);const s=px();V.x-=(mid.x-last.mid.x)*s;V.y-=(mid.y-last.mid.y)*s;apply()}last={dist,mid};moved=99}});
+      if(last){zoomAt(mid,last.dist/dist,false);const s=px(),q1=cl2loc(mid.x,mid.y),q0=cl2loc(last.mid.x,last.mid.y);V.x-=(q1.x-q0.x)*s;V.y-=(q1.y-q0.y)*s;apply()}last={dist,mid};moved=99}});
   const up=e=>{P.delete(e.pointerId);last=null;if(!P.size){svg.classList.remove('drag');if(moved<8&&downEl&&e.type==='pointerup')mapClick(downEl);else drawDyn();downEl=null}};
   svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   svg.addEventListener('wheel',e=>{e.preventDefault();zoomAt({x:e.clientX,y:e.clientY},Math.exp(e.deltaY*.0015),true)},{passive:false})}
 let moved=0,dynT=null,downEl=null;
-function zoomAt(c,f,redraw){const r=svg.getBoundingClientRect(),s=px(),wx=V.x+(c.x-r.left)*s,wy=V.y+(c.y-r.top)*s;
-  const nw=Math.min(Math.max(V.w*f,600),MW*2.2),k=nw/V.w;V.x=wx-(wx-V.x)*k;V.y=wy-(wy-V.y)*k;V.w=nw;V.h=V.h*k;apply();
+function zoomAt(c,f,redraw){const q=cl2loc(c.x,c.y),s=px(),wx=V.x+q.x*s,wy=V.y+q.y*s,cw=svg.clientWidth/(mapEl.clientWidth||1);
+  const nw=Math.min(Math.max(V.w*f,600*cw),MW*2.2*cw),k=nw/V.w;V.x=wx-(wx-V.x)*k;V.y=wy-(wy-V.y)*k;V.w=nw;V.h=V.h*k;apply();
   if(redraw){clearTimeout(dynT);dynT=setTimeout(drawDyn,90)}}
-function zoomBtn(f){const r=svg.getBoundingClientRect(),R=visibleRect();zoomAt({x:r.left+(R.l+R.r)/2,y:r.top+(R.t+R.b)/2},f,true)}
+function zoomBtn(f){const r=mapEl.getBoundingClientRect(),R=visibleRect();zoomAt({x:r.left+(R.l+R.r)/2,y:r.top+(R.t+R.b)/2},f,true)}
 const curve=(a,b,bend=.18)=>{const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1];return {d:`M${a[0]} ${a[1]} Q${mx-dy*bend} ${my+dx*bend} ${b[0]} ${b[1]}`,m:[mx-dy*bend/2,my+dx*bend/2]}};
 function pill(x,y,txt,sc,o={}){const fs=(o.fs||12)*sc,w=txt.length*fs*.86+fs*1.6+(o.icon?fs*1.3:0),h=fs*2.05;
   return `<g transform="translate(${x} ${y})" ${o.attr||''}><rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="${h/2}" fill="${o.bg||'#fff'}" ${o.bg?'':'filter="url(#shd)"'}/>${o.icon?`<g transform="translate(${-w/2+fs*.7} ${-fs*.62}) scale(${fs/20})" color="${o.fg||'#344054'}">${IC[o.icon].replace('<svg','<svg width="24" height="24"')}</g>`:''}<text x="${o.icon?fs*.62:0}" y="${fs*.36}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="${o.fg||'#344054'}">${esc(txt)}</text></g>`}
